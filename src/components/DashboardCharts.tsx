@@ -133,29 +133,14 @@ export default function DashboardCharts({ orders, listings }: DashboardChartsPro
       </div>
 
       {/* Mini Statistics Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Metric Card 1 */}
-        <div className="bg-emerald-50/60 border border-emerald-100 rounded-3xl p-5 shadow-xs flex justify-between items-start">
-          <div className="space-y-1">
-            <span className="text-xs font-semibold text-emerald-800 uppercase tracking-wider">Market Inflow</span>
-            <div className="text-2xl font-black text-emerald-950">{marketInflow > 1000 ? `${(marketInflow/1000).toFixed(1)}k` : marketInflow} Crates</div>
-            <p className="text-xs text-emerald-700">Ready at transit hubs today</p>
-          </div>
-          <div className="bg-emerald-500 text-white p-2.5 rounded-2xl shadow-sm">
-            <Package size={20} />
-          </div>
+      <div className="bg-emerald-50/60 border border-emerald-100 rounded-3xl p-5 shadow-xs flex justify-between items-start">
+        <div className="space-y-1">
+          <span className="text-xs font-semibold text-emerald-800 uppercase tracking-wider">Market Inflow</span>
+          <div className="text-2xl font-black text-emerald-950">{marketInflow > 1000 ? `${(marketInflow/1000).toFixed(1)}k` : marketInflow} Crates</div>
+          <p className="text-xs text-emerald-700">Ready at transit hubs today</p>
         </div>
-
-        {/* Metric Card 2 */}
-        <div className="bg-sky-50/60 border border-sky-100 rounded-3xl p-5 shadow-xs flex justify-between items-start">
-          <div className="space-y-1">
-            <span className="text-xs font-semibold text-sky-800 uppercase tracking-wider">Avg Settlement</span>
-            <div className="text-2xl font-black text-sky-950">Rs. {avgSettlement.toLocaleString()}</div>
-            <p className="text-xs text-sky-700">Per basket, over last 7 days</p>
-          </div>
-          <div className="bg-sky-500 text-white p-2.5 rounded-2xl shadow-sm">
-            <DollarSign size={20} />
-          </div>
+        <div className="bg-emerald-500 text-white p-2.5 rounded-2xl shadow-sm">
+          <Package size={20} />
         </div>
       </div>
     </div>
