@@ -505,81 +505,18 @@ export default function App() {
           </div>
 
           {/* Quick Stats Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <div className="bg-emerald-50/50 border border-emerald-100/85 p-6 rounded-3xl space-y-2">
-              <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider font-mono">
-                Bargain Prices from Buyers
-              </span>
-              <div className="text-3xl font-black text-emerald-950">{inboundRooms.length} Offers to Answer</div>
-              <p className="text-xs text-emerald-700 font-medium">Go to "Price Bargain Rooms" to reply with your price</p>
-            </div>
-
-            <div className="bg-sky-50/50 border border-sky-100/85 p-6 rounded-3xl space-y-2">
-              <span className="text-[11px] font-bold text-sky-800 uppercase tracking-wider font-mono">
-                Total Sales This Month
-              </span>
-              <div className="text-3xl font-black text-sky-950">Rs. {farmerTotalSales.toLocaleString()}</div>
-              <p className="text-xs text-sky-700">From {farmerTotalPayments} successful cash payments this month</p>
-            </div>
+          <div className="bg-sky-50/50 border border-sky-100/85 p-6 rounded-3xl space-y-2">
+            <span className="text-[11px] font-bold text-sky-800 uppercase tracking-wider font-mono">
+              Total Sales This Month
+            </span>
+            <div className="text-3xl font-black text-sky-950">Rs. {farmerTotalSales.toLocaleString()}</div>
+            <p className="text-xs text-sky-700">From {farmerTotalPayments} successful cash payments this month</p>
           </div>
 
-          {/* Grid: Vegetable trends + Active negotiation proposals */}
+          {/* Grid: Vegetable trends */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div className="lg:col-span-8">
+            <div className="lg:col-span-12">
               <DashboardCharts orders={orders} listings={listings} />
-            </div>
-
-            <div className="lg:col-span-4 bg-white border border-neutral-100 rounded-3xl p-5 shadow-xs space-y-4">
-              <div>
-                <h3 className="font-bold text-neutral-800 text-sm">Offers from Buyers</h3>
-                <p className="text-[10px] text-neutral-400">They want to bargain prices with you</p>
-              </div>
-
-              {inboundRooms.length === 0 ? (
-                <div className="text-center py-10 bg-neutral-50 rounded-2xl border border-dashed text-neutral-400 text-xs">
-                  No pending offers. Add your fresh vegetables to get buyers bidding!
-                </div>
-              ) : (
-                <div className="space-y-2.5">
-                  {inboundRooms.map((room) => {
-                    const lastMsg = room.messages[room.messages.length - 1];
-                    const isTurn = lastMsg ? lastMsg.senderRole === 'WHOLESALER' : true;
-
-                    return (
-                      <div
-                        key={room.roomId}
-                        className="p-3 bg-neutral-50/50 hover:bg-neutral-50 border border-neutral-150/60 rounded-2xl flex flex-col justify-between"
-                      >
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <span className="text-[10px] font-bold text-neutral-400 uppercase font-mono">{room.district}</span>
-                            <span className="font-bold text-neutral-800 text-xs block">{room.cropName}</span>
-                          </div>
-                          {isTurn && (
-                            <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 text-[9px] font-extrabold px-1.5 py-0.5 rounded">
-                              Your Turn to Reply
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="mt-2 text-xs text-neutral-500 font-medium">
-                          Offered Price: <span className="font-bold text-emerald-600">Rs. {lastMsg?.pricePerCrate || 1000}</span> / crate
-                        </div>
-
-                        <button
-                          onClick={() => {
-                            setActiveRoomId(room.roomId);
-                            setActiveTab('bargain');
-                          }}
-                          className="mt-3 text-[11px] font-bold text-center w-full py-2 bg-neutral-900 duration-150 text-white rounded-xl hover:bg-neutral-810 cursor-pointer"
-                        >
-                          Open Bargain Chat
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -614,15 +551,7 @@ export default function App() {
         </div>
 
         {/* Top metrics grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          <div className="bg-emerald-50/50 border border-emerald-100/85 p-6 rounded-3xl space-y-2">
-            <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider font-mono">
-              My Active Bargain Offers
-            </span>
-            <div className="text-3xl font-black text-emerald-950">{outboundRooms.length} Active</div>
-            <p className="text-xs text-emerald-700 font-medium">Go to "Price Bargain Rooms" to see responses</p>
-          </div>
-
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <div className="bg-sky-50/50 border border-sky-100/85 p-6 rounded-3xl space-y-2">
             <span className="text-[11px] font-bold text-sky-800 uppercase tracking-wider font-mono">
               Total Spent This Month
@@ -851,23 +780,6 @@ export default function App() {
                   Browse Crops
                 </button>
 
-                <button
-                  onClick={() => setActiveTab('bargain')}
-                  className={`w-full text-left p-2.5 rounded-xl text-xs font-bold leading-none flex items-center justify-between cursor-pointer duration-150 ${activeTab === 'bargain'
-                      ? 'bg-neutral-900 text-white shadow-md'
-                      : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
-                    }`}
-                >
-                  <span className="flex items-center gap-3">
-                    <MessageSquare size={14} />
-                    Price Bargain Rooms
-                  </span>
-                  {rooms.some(r => r.status === 'NEGOTIATING') && (
-                    <span className="h-4 w-4 rounded-full bg-emerald-500 text-white font-extrabold text-[9px] flex items-center justify-center">
-                      {rooms.filter(r => r.status === 'NEGOTIATING').length}
-                    </span>
-                  )}
-                </button>
 
                 {currentUser.role === 'FARMER' && (
                   <button
@@ -1029,23 +941,6 @@ export default function App() {
                 Browse Crops
               </button>
 
-              <button
-                onClick={() => setActiveTab('bargain')}
-                className={`w-full text-left p-2.5 rounded-xl text-xs font-bold leading-none flex items-center justify-between cursor-pointer duration-150 ${activeTab === 'bargain'
-                    ? 'bg-neutral-900 text-white shadow-md'
-                    : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
-                  }`}
-              >
-                <span className="flex items-center gap-3">
-                  <MessageSquare size={14} />
-                  Price Bargain Rooms
-                </span>
-                {rooms.some(r => r.status === 'NEGOTIATING') && (
-                  <span className="h-4 w-4 rounded-full bg-emerald-500 text-white font-extrabold text-[9px] flex items-center justify-center">
-                    {rooms.filter(r => r.status === 'NEGOTIATING').length}
-                  </span>
-                )}
-              </button>
 
               {currentUser.role === 'FARMER' && (
                 <button
