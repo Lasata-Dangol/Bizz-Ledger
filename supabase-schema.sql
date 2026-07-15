@@ -25,8 +25,6 @@ select
 -- WARNING: THIS WILL DELETE ALL EXISTING DATA
 -- DROP TABLE IF EXISTS kalimati_rates CASCADE;
 -- DROP TABLE IF EXISTS orders CASCADE;
--- DROP TABLE IF EXISTS bargain_messages CASCADE;
--- DROP TABLE IF EXISTS bargain_rooms CASCADE;
 -- DROP TABLE IF EXISTS listings CASCADE;
 -- DROP TABLE IF EXISTS profiles CASCADE;
 
@@ -82,34 +80,9 @@ CREATE TABLE IF NOT EXISTS listings (
     "imageUrl" TEXT
 );
 
-CREATE TABLE IF NOT EXISTS bargain_rooms (
-    "roomId" TEXT PRIMARY KEY,
-    "listingId" TEXT NOT NULL,
-    "cropName" TEXT NOT NULL,
-    district TEXT NOT NULL,
-    "farmerId" TEXT NOT NULL,
-    "farmerName" TEXT NOT NULL,
-    "wholesalerId" TEXT NOT NULL,
-    "wholesalerName" TEXT NOT NULL,
-    status TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS bargain_messages (
-    "messageId" TEXT PRIMARY KEY,
-    "roomId" TEXT REFERENCES bargain_rooms("roomId"),
-    "senderId" TEXT NOT NULL,
-    "senderName" TEXT NOT NULL,
-    "senderRole" TEXT NOT NULL,
-    type TEXT NOT NULL,
-    "pricePerCrate" NUMERIC,
-    "quantityRequested" INTEGER,
-    text TEXT,
-    timestamp TIMESTAMP WITH TIME ZONE NOT NULL
-);
 
 CREATE TABLE IF NOT EXISTS orders (
     "orderId" TEXT PRIMARY KEY,
-    "roomId" TEXT NOT NULL,
     "listingId" TEXT NOT NULL,
     "cropName" TEXT NOT NULL,
     "farmerName" TEXT NOT NULL,

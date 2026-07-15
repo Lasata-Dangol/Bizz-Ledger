@@ -36,12 +36,12 @@ export default function OrdersPage({ orders, currentUser, onUpdateOrderStatus, s
 
           <div className="space-y-2.5 overflow-y-auto max-h-[460px] pr-1">
             {orders.map((order) => {
-              const isSelected = order.orderId === selectedOrderId;
+              const isSelected = order.orderId === activeOrderId;
               return (
                 <button
                   key={order.orderId}
                   onClick={() => setSelectedOrderId(order.orderId)}
-                  className={`w-full text-left p-3.5 rounded-2xl border transition duration-150 flex justify-between items-center cursor-pointer ${order.orderId === activeOrderId
+                  className={`w-full text-left p-3.5 rounded-2xl border transition duration-150 flex justify-between items-center cursor-pointer ${isSelected
                       ? 'bg-neutral-900 border-neutral-950 text-white shadow-md'
                       : 'bg-neutral-50/50 hover:bg-neutral-100 border-neutral-150 text-neutral-700'
                     }`}
@@ -192,7 +192,7 @@ export default function OrdersPage({ orders, currentUser, onUpdateOrderStatus, s
             </>
           ) : (
             <div className="bg-neutral-50 border border-neutral-200 rounded-3xl p-12 text-center text-neutral-400">
-              No delivery bills found yet. Complete a bargain to create orders!
+              No delivery bills found yet. Add crops to your cart and checkout to place an order.
             </div>
           )}
         </div>

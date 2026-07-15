@@ -4,21 +4,15 @@ import { Search, MapPin, Tag, Calendar, Truck, ArrowRight, Star, Plus, ShoppingC
 
 interface MarketplacePageProps {
   listings: VegetableListing[];
-  onStartNegotiation: (listing: VegetableListing, initialOffer: number, quantity: number) => void;
   onAddToCart?: (listing: VegetableListing) => void;
   currentUser: UserProfile;
   onViewFarmer?: (farmerId: string) => void;
 }
 
-export default function MarketplacePage({ listings, onStartNegotiation, onAddToCart, currentUser, onViewFarmer }: MarketplacePageProps) {
+export default function MarketplacePage({ listings, onAddToCart, currentUser, onViewFarmer }: MarketplacePageProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDistrict, setSelectedDistrict] = useState('All');
   const [selectedCategory, setSelectedCategory] = useState('All');
-  
-  const [negotiatingListing, setNegotiatingListing] = useState<VegetableListing | null>(null);
-  const [proposedPrice, setProposedPrice] = useState<number>(1000);
-  const [proposedQuantity, setProposedQuantity] = useState<number>(20);
-  const [introText, setIntroText] = useState('');
 
   // Extract unique districts and categories
   const districts = ['All', 'Panchkhal, Kavre', 'Benighat, Dhading', 'Palung, Makwanpur'];
@@ -32,21 +26,6 @@ export default function MarketplacePage({ listings, onStartNegotiation, onAddToC
     const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
     return matchesSearch && matchesDistrict && matchesCategory;
   });
-
-  const openBargainModal = (item: VegetableListing) => {
-    setNegotiatingListing(item);
-    // Suggest some realistic startup pricing (usually 10-15% below pricePerCrate)
-    setProposedPrice(Math.round(item.pricePerCrate * 0.85));
-    setProposedQuantity(Math.min(30, item.quantityAvailableCrates));
-    setIntroText(`Namaskar, we are interested in booking ${Math.min(30, item.quantityAvailableCrates)} crates. Can you accept Rs. ${Math.round(item.pricePerCrate * 0.85)} per crate?`);
-  };
-
-  const submitNegotiation = () => {
-    if (negotiatingListing) {
-      onStartNegotiation(negotiatingListing, proposedPrice, proposedQuantity);
-      setNegotiatingListing(null);
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -232,132 +211,18 @@ export default function MarketplacePage({ listings, onStartNegotiation, onAddToC
                 {/* Footer buttons based on current roles etc */}
                 <div className="p-6 pt-0 space-y-2">
                   {currentUser.role === 'WHOLESALER' ? (
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <button 
-                        onClick={() => openBargainModal(item)}
-                        className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-900 hover:bg-neutral-800 text-white font-bold py-2.5 px-3 rounded-xl text-xs cursor-pointer transition duration-150"
-                      >
-                        Bargain Price
-                      </button>
-                      <button 
-                        onClick={() => onAddToCart && onAddToCart(item)}
-                        className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs cursor-pointer hover:shadow-xs transition duration-150"
-                      >
-                        <ShoppingCart size={13} />
-                        Add to Basket
-                      </button>
-                    </div>
+                    <button 
+                      onClick={() => onAddToCart && onAddToCart(item)}
+                      className="w-full flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs cursor-pointer hover:shadow-xs transition duration-150"
+                    >
+                      <ShoppingCart size={13} />
+                      Add to Basket
+                    </button>
                   ) : null}
                 </div>
               </div>
             );
           })}
-        </div>
-      )}
-
-      {/* Sourcing Interactive Modal Dialog */}
-      {negotiatingListing && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-6 shadow-xl relative animate-in fade-in zoom-in-95 duration-200">
-            <div className="space-y-1">
-              <span className="text-xs font-bold font-mono text-emerald-600 tracking-wider uppercase block">
-                BizzLedger Negotiation Hub
-              </span>
-              <h3 className="text-xl font-bold text-neutral-900">
-                Initiate Bargain Session
-              </h3>
-              <p className="text-xs text-neutral-500">
-                Adjust the sliding constraints to propose initial transactional bounds. Both parties can make counters.
-              </p>
-            </div>
-
-            {/* Product summary snippet */}
-            <div className="bg-neutral-50 rounded-2xl p-3 flex items-center gap-3">
-              <img 
-                src={negotiatingListing.imageUrl} 
-                alt={negotiatingListing.cropName} 
-                className="w-12 h-12 rounded-xl object-cover"
-                referrerPolicy="no-referrer"
-              />
-              <div>
-                <span className="block text-xs leading-none text-neutral-400 font-mono font-bold uppercase">{negotiatingListing.district}</span>
-                <span className="block font-bold text-neutral-800 text-sm mt-0.5">{negotiatingListing.cropName}</span>
-                <span className="block text-xs text-emerald-600 mt-0.5 font-bold">Price: Rs. {negotiatingListing.pricePerCrate} / Cr</span>
-              </div>
-            </div>
-
-            {/* Slider 1: Prposed Price */}
-            <div className="space-y-2">
-              <div className="flex justify-between items-center text-xs">
-                <span className="font-bold text-neutral-600">Your Initial Bidding Price</span>
-                <span className="text-emerald-700 font-extrabold text-sm font-mono">Rs. {proposedPrice} / Crate</span>
-              </div>
-              <input 
-                type="range"
-                min={Math.round(negotiatingListing.pricePerCrate * 0.5)}
-                max={negotiatingListing.pricePerCrate * 1.5}
-                step={50}
-                value={proposedPrice}
-                onChange={(e) => setProposedPrice(Number(e.target.value))}
-                className="w-full accent-emerald-600 cursor-pointer h-2 bg-neutral-100 rounded-lg appearance-none"
-              />
-              <div className="flex justify-between text-[10px] text-neutral-400 font-mono">
-                <span>Listed Price: Rs.{negotiatingListing.pricePerCrate}</span>
-              </div>
-            </div>
-
-            {/* Slider 2: Proposed volume */}
-            <div className="space-y-2">
-              <div className="flex justify-between items-center text-xs">
-                <span className="font-bold text-neutral-600 font-mono">Quantity (Crates)</span>
-                <span className="text-neutral-800 font-extrabold text-sm">{proposedQuantity} Crates</span>
-              </div>
-              <input 
-                type="range"
-                min={5}
-                max={negotiatingListing.quantityAvailableCrates}
-                step={5}
-                value={proposedQuantity}
-                onChange={(e) => setProposedQuantity(Number(e.target.value))}
-                className="w-full accent-emerald-600 cursor-pointer h-2 bg-neutral-100 rounded-lg appearance-none"
-              />
-              <div className="flex justify-between text-[10px] text-neutral-400 font-mono">
-                <span>Min: 5 Crates</span>
-                <span>Max Available: {negotiatingListing.quantityAvailableCrates} Crates</span>
-              </div>
-            </div>
-
-            {/* Dialogue Message */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-neutral-600 block">Introductory Message</label>
-              <textarea 
-                rows={3}
-                placeholder="Write your greeting terms..."
-                value={introText}
-                onChange={(e) => setIntroText(e.target.value)}
-                className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded-2xl text-xs font-medium focus:outline-hidden focus:ring-1 focus:ring-emerald-500 focus:bg-white"
-              />
-            </div>
-
-            {/* Price floor check alert warning */}
-
-
-            {/* Actions */}
-            <div className="flex gap-3">
-              <button 
-                onClick={() => setNegotiatingListing(null)}
-                className="flex-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-bold py-3 px-4 rounded-xl text-xs transition cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={submitNegotiation}
-                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl text-xs transition cursor-pointer"
-              >
-                Launch Bargain Chamber
-              </button>
-            </div>
-          </div>
         </div>
       )}
     </div>

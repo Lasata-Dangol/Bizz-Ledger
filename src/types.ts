@@ -51,41 +51,8 @@ export interface VegetableListing {
   imageUrl?: string;
 }
 
-export type BargainMessageType = 
-  | 'OFFER_SUBMITTED' 
-  | 'COUNTER_OFFERED' 
-  | 'MESSAGE_TEXT' 
-  | 'ACCEPTED_CONTRACT' 
-  | 'WITHDRAWN';
-
-export interface BargainMessage {
-  messageId: string;
-  senderId: string;
-  senderName: string;
-  senderRole: UserRole;
-  type: BargainMessageType;
-  pricePerCrate?: number;
-  quantityRequested?: number;
-  text?: string;
-  timestamp: string;
-}
-
-export interface BargainRoom {
-  roomId: string;
-  listingId: string;
-  cropName: string;
-  district: string;
-  farmerId: string;
-  farmerName: string;
-  wholesalerId: string;
-  wholesalerName: string;
-  messages: BargainMessage[];
-  status: 'NEGOTIATING' | 'COMPLETED' | 'WITHDRAWN';
-}
-
 export interface Order {
   orderId: string;
-  roomId: string;
   listingId: string;
   cropName: string;
   farmerName: string;
