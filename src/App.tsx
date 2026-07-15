@@ -535,7 +535,7 @@ export default function App() {
               Buyer Sourcing Center
             </span>
             <h2 className="text-2xl sm:text-3xl font-black text-neutral-800 tracking-tight">
-              Namaskar, Ramesh Traders
+              Namaskar, {currentUser.name}
             </h2>
             <p className="text-xs text-neutral-500 max-w-lg">
               Buy fresh crops directly from village farmers. Easy to chat and bargain prices with them.
