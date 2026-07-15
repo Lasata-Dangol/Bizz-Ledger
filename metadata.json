@@ -1,0 +1,6 @@
+{
+  "name": "BizzLedger",
+  "description": "Direct Farm-to-Wholesaler Vegetable Marketplace with interactive bargain rooms, Kathmandu (Kalimati) live rates, product discovery feed, and automated order fulfillment tracking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

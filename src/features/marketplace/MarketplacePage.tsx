@@ -1,0 +1,375 @@
+import React, { useState } from 'react';
+import { VegetableListing, UserProfile } from '../../types';
+import { Search, MapPin, Tag, Calendar, Truck, ArrowRight, Star, Plus, ShoppingCart } from 'lucide-react';
+
+interface MarketplacePageProps {
+  listings: VegetableListing[];
+  onStartNegotiation: (listing: VegetableListing, initialOffer: number, quantity: number) => void;
+  onAddToCart?: (listing: VegetableListing) => void;
+  currentUser: UserProfile;
+}
+
+export default function MarketplacePage({ listings, onStartNegotiation, onAddToCart, currentUser }: MarketplacePageProps) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedDistrict, setSelectedDistrict] = useState('All');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  
+  const [negotiatingListing, setNegotiatingListing] = useState<VegetableListing | null>(null);
+  const [proposedPrice, setProposedPrice] = useState<number>(1000);
+  const [proposedQuantity, setProposedQuantity] = useState<number>(20);
+  const [introText, setIntroText] = useState('');
+
+  // Extract unique districts and categories
+  const districts = ['All', 'Panchkhal, Kavre', 'Benighat, Dhading', 'Palung, Makwanpur'];
+  const categories = ['All', 'Tomatoes', 'Cabbages', 'Greens', 'Potatoes', 'Squash', 'Other'];
+
+  // Filter listings
+  const filteredListings = listings.filter((item) => {
+    const matchesSearch = item.cropName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          item.farmerName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesDistrict = selectedDistrict === 'All' || item.district === selectedDistrict;
+    const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
+    return matchesSearch && matchesDistrict && matchesCategory;
+  });
+
+  const openBargainModal = (item: VegetableListing) => {
+    setNegotiatingListing(item);
+    // Suggest some realistic startup pricing (usually 10-15% below target targetPricePerCrate)
+    setProposedPrice(Math.round(item.targetPricePerCrate * 0.85));
+    setProposedQuantity(Math.min(30, item.quantityAvailableCrates));
+    setIntroText(`Namaskar, we are interested in booking ${Math.min(30, item.quantityAvailableCrates)} crates. Can you accept Rs. ${Math.round(item.targetPricePerCrate * 0.85)} per crate?`);
+  };
+
+  const submitNegotiation = () => {
+    if (negotiatingListing) {
+      onStartNegotiation(negotiatingListing, proposedPrice, proposedQuantity);
+      setNegotiatingListing(null);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Search Header Banner */}
+      <div className="bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-[0_10px_30px_rgba(16,185,129,0.15)]">
+        <div className="space-y-2">
+          <span className="text-xs bg-emerald-500/55 backdrop-blur-md text-emerald-100 font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+            Fresh Vegetables
+          </span>
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Buy Direct From Farmer</h2>
+          <p className="text-emerald-100/90 text-sm max-w-lg">
+            Find fresh tomatoes, potatoes, onions, cabbage & cauliflowers directly from village farms. Chat to get the best wholesale price!
+          </p>
+        </div>
+        <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 flex gap-4 text-xs">
+          <div>
+            <span className="block text-emerald-200 font-bold mb-0.5 uppercase font-mono tracking-wider">Your Location</span>
+            <span className="font-extrabold text-[15px] text-white flex items-center gap-1">
+              <MapPin size={14} className="text-amber-400" />
+              {currentUser.district}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Interactive Sourcing Filters */}
+      <div className="bg-white border border-neutral-100 rounded-3xl p-5 shadow-[0_4px_20px_rgba(0,0,0,0.02)] space-y-4">
+        <div className="flex flex-col md:flex-row gap-4">
+          {/* Main search input */}
+          <div className="relative flex-1">
+            <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-neutral-400 group-focus-within:text-emerald-500 transition duration-200" size={18} />
+            <input 
+              type="text"
+              placeholder="Search vegetables or farmers (e.g. Tomato, Pema Shrestha)..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-11 pr-4 py-3 bg-neutral-50/80 border border-neutral-200 rounded-2xl text-sm font-medium focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition duration-200"
+            />
+          </div>
+
+          {/* District selector */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-bold text-neutral-500 font-mono uppercase mr-1">District:</span>
+            {districts.map(dist => (
+              <button
+                key={dist}
+                onClick={() => setSelectedDistrict(dist)}
+                className={`px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer transition ${
+                  selectedDistrict === dist 
+                    ? 'bg-neutral-900 text-white shadow-xs' 
+                    : 'bg-neutral-50 text-neutral-600 hover:bg-neutral-100'
+                }`}
+              >
+                {dist === 'All' ? 'All Districts' : dist.split(',')[0]}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Categories selector */}
+        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-dotted border-neutral-100">
+          <span className="text-xs font-bold text-neutral-500 font-mono uppercase mr-1">Category:</span>
+          {categories.map(cat => (
+            <button
+              key={cat}
+              onClick={() => setSelectedCategory(cat)}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-medium cursor-pointer transition ${
+                selectedCategory === cat 
+                  ? 'bg-emerald-600 text-white shadow-xs' 
+                  : 'bg-neutral-50 text-neutral-500 hover:bg-neutral-100'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Main Grid Feed */}
+      {filteredListings.length === 0 ? (
+        <div className="bg-neutral-50 border border-dashed border-neutral-200 rounded-3xl p-16 text-center space-y-3">
+          <div className="text-neutral-300 font-extrabold text-5xl font-mono">?</div>
+          <h3 className="font-bold text-neutral-700 text-lg">No Crops Posted Here</h3>
+          <p className="text-neutral-500 text-sm max-w-md mx-auto">
+            Try resetting your search query or selecting "All Districts" to browse crop volumes across Kavre, Dhading, and Makwanpur.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {filteredListings.map((item) => {
+            // Check if listing has a floor budget indicator and visual progress bar
+            const readyShipment = item.readyToShip;
+
+            return (
+              <div 
+                key={item.id} 
+                className="bg-white border border-neutral-100 rounded-3xl overflow-hidden shadow-[0_4px_25px_rgba(0,0,0,0.02)] hover:shadow-md transition-all duration-300 flex flex-col justify-between"
+              >
+                {/* Visual Header */}
+                <div className="relative h-48 bg-neutral-100">
+                  <img 
+                    src={item.imageUrl} 
+                    alt={item.cropName} 
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                  {/* Category overlay */}
+                  <span className="absolute top-4 left-4 bg-white/80 backdrop-blur-md text-neutral-800 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
+                    {item.category}
+                  </span>
+                  
+                  {/* Shipping readiness indicator */}
+                  <span className={`absolute top-4 right-4 text-[10px] font-extrabold px-3 py-1 rounded-full shadow-sm flex items-center gap-1 ${
+                    readyShipment 
+                      ? 'bg-emerald-500 text-white' 
+                      : 'bg-amber-400 text-amber-950'
+                  }`}>
+                    <Truck size={11} />
+                    {readyShipment ? 'Ready for Sourcing' : 'Harvest Scheduled'}
+                  </span>
+                </div>
+
+                {/* Content body */}
+                <div className="p-6 flex-1 space-y-4">
+                  <div className="space-y-1">
+                    <span className="text-xs text-neutral-400 font-bold font-mono uppercase tracking-wider flex items-center gap-1">
+                      <MapPin size={12} className="text-rose-500" />
+                      {item.district}
+                    </span>
+                    <h3 className="text-xl font-bold text-neutral-800 tracking-tight">{item.cropName}</h3>
+                  </div>
+
+                  {/* Farmer profile bar */}
+                  <div className="bg-neutral-50 rounded-2xl p-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center font-bold text-emerald-800">
+                        {item.farmerName[0]}
+                      </div>
+                      <div>
+                        <span className="block text-xs font-bold text-neutral-700 leading-tight">{item.farmerName}</span>
+                        <span className="block text-[10px] text-neutral-400 font-mono">Producer Partner</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg text-amber-700 font-bold text-xs">
+                      <Star size={12} className="fill-amber-400 stroke-amber-500" />
+                      {item.farmerRating}
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-neutral-500 line-clamp-2 leading-relaxed h-8">
+                    {item.notes || 'No description provided by farmer co-op.'}
+                  </p>
+
+                  {/* Quantity & Target Prices */}
+                  <div className="grid grid-cols-2 gap-4 pt-3 border-t border-neutral-100">
+                    <div>
+                      <span className="block text-[10px] text-neutral-400 uppercase font-mono tracking-wider font-bold">Supply Available</span>
+                      <span className="text-[15px] font-black text-neutral-800">
+                        {item.quantityAvailableCrates} <span className="text-xs font-normal">Crates</span>
+                      </span>
+                      <span className="block text-[10px] text-neutral-400">~ {item.quantityAvailableCrates * 20} kg total</span>
+                    </div>
+
+                    <div>
+                      <span className="block text-[10px] text-neutral-400 uppercase font-mono tracking-wider font-bold">Target Price</span>
+                      <span className="text-[15px] font-black text-emerald-600">
+                        Rs. {item.targetPricePerCrate} <span className="text-xs font-normal text-neutral-500">/ Cr</span>
+                      </span>
+                      <span className="block text-[11px] text-neutral-400 font-mono">Rs. {item.targetPricePerCrate / 20}/kg target</span>
+                    </div>
+                  </div>
+
+                  {/* Sourcing Timeline metrics */}
+                  <div className="flex items-center justify-between text-xs text-neutral-500 bg-neutral-50/50 p-2 rounded-xl">
+                    <span className="flex items-center gap-1.5 font-mono">
+                      <Calendar size={13} />
+                      Harvested: {item.harvestDate}
+                    </span>
+                    <span className="font-bold text-emerald-700 text-[11px] flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded">
+                      Floor Price: Rs. {item.minimumFloorPricePerCrate}/Cr
+                    </span>
+                  </div>
+                </div>
+
+                {/* Footer buttons based on current roles etc */}
+                <div className="p-6 pt-0 space-y-2">
+                  {currentUser.role === 'WHOLESALER' ? (
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <button 
+                        onClick={() => openBargainModal(item)}
+                        className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-900 hover:bg-neutral-800 text-white font-bold py-2.5 px-3 rounded-xl text-xs cursor-pointer transition duration-150"
+                      >
+                        Bargain Price
+                      </button>
+                      <button 
+                        onClick={() => onAddToCart && onAddToCart(item)}
+                        className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs cursor-pointer hover:shadow-xs transition duration-150"
+                      >
+                        <ShoppingCart size={13} />
+                        Add to Basket
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="text-center text-xs text-neutral-400 py-3 bg-neutral-50 rounded-2xl border border-dashed border-neutral-200">
+                      Switch Active Role to Wholesaler to Initiate Sourcing & Bargaining
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Sourcing Interactive Modal Dialog */}
+      {negotiatingListing && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-6 shadow-xl relative animate-in fade-in zoom-in-95 duration-200">
+            <div className="space-y-1">
+              <span className="text-xs font-bold font-mono text-emerald-600 tracking-wider uppercase block">
+                BizzLedger Negotiation Hub
+              </span>
+              <h3 className="text-xl font-bold text-neutral-900">
+                Initiate Bargain Session
+              </h3>
+              <p className="text-xs text-neutral-500">
+                Adjust the sliding constraints to propose initial transactional bounds. Both parties can make counters.
+              </p>
+            </div>
+
+            {/* Product summary snippet */}
+            <div className="bg-neutral-50 rounded-2xl p-3 flex items-center gap-3">
+              <img 
+                src={negotiatingListing.imageUrl} 
+                alt={negotiatingListing.cropName} 
+                className="w-12 h-12 rounded-xl object-cover"
+                referrerPolicy="no-referrer"
+              />
+              <div>
+                <span className="block text-xs leading-none text-neutral-400 font-mono font-bold uppercase">{negotiatingListing.district}</span>
+                <span className="block font-bold text-neutral-800 text-sm mt-0.5">{negotiatingListing.cropName}</span>
+                <span className="block text-xs text-emerald-600 mt-0.5 font-bold">Target Price: Rs. {negotiatingListing.targetPricePerCrate} / Cr</span>
+              </div>
+            </div>
+
+            {/* Slider 1: Prposed Price */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center text-xs">
+                <span className="font-bold text-neutral-600">Your Initial Bidding Price</span>
+                <span className="text-emerald-700 font-extrabold text-sm font-mono">Rs. {proposedPrice} / Crate</span>
+              </div>
+              <input 
+                type="range"
+                min={negotiatingListing.minimumFloorPricePerCrate - 100} // Let them try low, but below floor gets blocked or alerts
+                max={negotiatingListing.targetPricePerCrate}
+                step={50}
+                value={proposedPrice}
+                onChange={(e) => setProposedPrice(Number(e.target.value))}
+                className="w-full accent-emerald-600 cursor-pointer h-2 bg-neutral-100 rounded-lg appearance-none"
+              />
+              <div className="flex justify-between text-[10px] text-neutral-400 font-mono">
+                <span>Farmer's Target: Rs.{negotiatingListing.targetPricePerCrate}</span>
+                <span>Minimum Floor: Rs.{negotiatingListing.minimumFloorPricePerCrate}</span>
+              </div>
+            </div>
+
+            {/* Slider 2: Proposed volume */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center text-xs">
+                <span className="font-bold text-neutral-600 font-mono">Quantity (Crates)</span>
+                <span className="text-neutral-800 font-extrabold text-sm">{proposedQuantity} Crates</span>
+              </div>
+              <input 
+                type="range"
+                min={5}
+                max={negotiatingListing.quantityAvailableCrates}
+                step={5}
+                value={proposedQuantity}
+                onChange={(e) => setProposedQuantity(Number(e.target.value))}
+                className="w-full accent-emerald-600 cursor-pointer h-2 bg-neutral-100 rounded-lg appearance-none"
+              />
+              <div className="flex justify-between text-[10px] text-neutral-400 font-mono">
+                <span>Min: 5 Crates</span>
+                <span>Max Available: {negotiatingListing.quantityAvailableCrates} Crates</span>
+              </div>
+            </div>
+
+            {/* Dialogue Message */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-neutral-600 block">Introductory Message</label>
+              <textarea 
+                rows={3}
+                placeholder="Write your greeting terms..."
+                value={introText}
+                onChange={(e) => setIntroText(e.target.value)}
+                className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded-2xl text-xs font-medium focus:outline-hidden focus:ring-1 focus:ring-emerald-500 focus:bg-white"
+              />
+            </div>
+
+            {/* Price floor check alert warning */}
+            {proposedPrice < negotiatingListing.minimumFloorPricePerCrate && (
+              <div className="bg-amber-50 border border-amber-200 text-amber-800 text-[11px] p-3 rounded-xl leading-relaxed">
+                ⚠️ Your proposed bid is **below** the farmer's target floor limit of **Rs. {negotiatingListing.minimumFloorPricePerCrate}**. They are highly likely to instantly auto-decline or submit a firm counter offer!
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setNegotiatingListing(null)}
+                className="flex-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-bold py-3 px-4 rounded-xl text-xs transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={submitNegotiation}
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl text-xs transition cursor-pointer"
+              >
+                Launch Bargain Chamber
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
