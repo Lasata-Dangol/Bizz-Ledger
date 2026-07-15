@@ -6,12 +6,17 @@ interface OrdersPageProps {
   orders: Order[];
   currentUser: UserProfile;
   onUpdateOrderStatus: (orderId: string, status: 'PROCESSING' | 'IN_TRANSIT' | 'ARRIVED') => void;
+  selectedOrderId?: string | null;
+  onSelectOrder?: (orderId: string | null) => void;
 }
 
-export default function OrdersPage({ orders, currentUser, onUpdateOrderStatus }: OrdersPageProps) {
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(orders[0]?.orderId || null);
+export default function OrdersPage({ orders, currentUser, onUpdateOrderStatus, selectedOrderId: propSelectedOrderId, onSelectOrder }: OrdersPageProps) {
+  const [localSelectedOrderId, setLocalSelectedOrderId] = useState<string | null>(orders[0]?.orderId || null);
 
-  const activeOrder = orders.find(o => o.orderId === selectedOrderId) || orders[0];
+  const activeOrderId = propSelectedOrderId !== undefined ? propSelectedOrderId : localSelectedOrderId;
+  const setSelectedOrderId = onSelectOrder || setLocalSelectedOrderId;
+
+  const activeOrder = orders.find(o => o.orderId === activeOrderId) || orders[0];
 
   return (
     <div className="space-y-6">
@@ -36,7 +41,7 @@ export default function OrdersPage({ orders, currentUser, onUpdateOrderStatus }:
                 <button
                   key={order.orderId}
                   onClick={() => setSelectedOrderId(order.orderId)}
-                  className={`w-full text-left p-3.5 rounded-2xl border transition duration-150 flex justify-between items-center cursor-pointer ${isSelected
+                  className={`w-full text-left p-3.5 rounded-2xl border transition duration-150 flex justify-between items-center cursor-pointer ${order.orderId === activeOrderId
                       ? 'bg-neutral-900 border-neutral-950 text-white shadow-md'
                       : 'bg-neutral-50/50 hover:bg-neutral-100 border-neutral-150 text-neutral-700'
                     }`}
@@ -164,6 +169,16 @@ export default function OrdersPage({ orders, currentUser, onUpdateOrderStatus }:
                     </div>
                   </div>
                 </div>
+
+                {/* Accept Order Action Button for Farmer */}
+                {activeOrder.status === 'PROCESSING' && currentUser.role === 'FARMER' && (
+                  <button
+                    onClick={() => onUpdateOrderStatus(activeOrder.orderId, 'IN_TRANSIT')}
+                    className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-2xl transition duration-150 cursor-pointer shadow-sm text-center block"
+                  >
+                    Accept Order & Settle Shipment
+                  </button>
+                )}
 
                 {/* Final calculated total sum */}
                 <div className="flex justify-between items-center py-3 border-t border-neutral-200">

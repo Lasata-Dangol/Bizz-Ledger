@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { UserProfile, VegetableListing, BargainRoom, Order, UserRole, BargainMessage, KalimatiRate } from './types';
+import { UserProfile, VegetableListing, BargainRoom, Order, UserRole, BargainMessage, KalimatiRate, AppNotification } from './types';
 import { MOCK_USERS, KALIMATI_RATES } from './mockData';
 import { db, isSupabaseConfigured, supabase } from './lib/supabase';
 import KalimatiTicker from './components/KalimatiTicker';
@@ -79,6 +79,10 @@ export default function App() {
     return saved || null;
   });
 
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+
   const [showRoleSelector, setShowRoleSelector] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showNotificationCount, setShowNotificationCount] = useState(true);
@@ -112,6 +116,10 @@ export default function App() {
           // Active orders sync
           const fetchedOrders = await db.getOrders(currentUser.name, currentUser.role);
           setOrders(fetchedOrders);
+
+          // Fetch notifications
+          const fetchedNotifs = await db.getNotifications(currentUser.id);
+          setNotifications(fetchedNotifs);
         } catch (err) {
           console.error('Failed to load personalized data from DB:', err);
         }
@@ -267,9 +275,28 @@ export default function App() {
 
     for (const ord of newCreatedOrders) {
       await db.createOrder(ord);
+
+      const matchedItem = checkoutItems.find(item => item.listing.id === ord.listingId);
+      if (matchedItem) {
+        const notif: AppNotification = {
+          id: `notif_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`,
+          userId: matchedItem.listing.farmerId,
+          title: 'New Order Received',
+          message: `${ord.wholesalerName} placed a new order for ${ord.quantity} crates of ${ord.cropName} at Rs. ${ord.finalPricePerCrate} per crate. Status: ${ord.status}.`,
+          orderId: ord.orderId,
+          isRead: false,
+          createdAt: new Date().toISOString()
+        };
+        await db.createNotification(notif);
+      }
     }
 
     setOrders((prev) => [...newCreatedOrders, ...prev]);
+
+    if (currentUser) {
+      const fetchedNotifs = await db.getNotifications(currentUser.id);
+      setNotifications(fetchedNotifs);
+    }
   };
 
   const handleAddNewListing = async (newListing: Omit<VegetableListing, 'id' | 'farmerId' | 'farmerName' | 'farmerRating'>) => {
@@ -418,6 +445,22 @@ export default function App() {
 
       await db.createOrder(newOrder);
       setOrders((prev) => [newOrder, ...prev]);
+
+      const notif: AppNotification = {
+        id: `notif_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`,
+        userId: matchedRoom.farmerId,
+        title: 'New Order Received',
+        message: `${newOrder.wholesalerName} placed a new order for ${newOrder.quantity} crates of ${newOrder.cropName} at Rs. ${newOrder.finalPricePerCrate} per crate. Status: ${newOrder.status}.`,
+        orderId: newOrder.orderId,
+        isRead: false,
+        createdAt: new Date().toISOString()
+      };
+      await db.createNotification(notif);
+
+      if (currentUser) {
+        const fetchedNotifs = await db.getNotifications(currentUser.id);
+        setNotifications(fetchedNotifs);
+      }
     }
   };
 
@@ -456,6 +499,31 @@ export default function App() {
       setOrders((prev) =>
         prev.map((ord) => (ord.orderId === orderId ? updated : ord))
       );
+
+      if (status === 'IN_TRANSIT') {
+        try {
+          const wholesalerProfile = await db.getProfileByName(updated.wholesalerName);
+          if (wholesalerProfile) {
+            const notif: AppNotification = {
+              id: `notif_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`,
+              userId: wholesalerProfile.id,
+              title: 'Order Accepted',
+              message: `Your order ${orderId} for ${updated.quantity} crates of ${updated.cropName} has been accepted by farmer ${updated.farmerName}.`,
+              orderId: orderId,
+              isRead: false,
+              createdAt: new Date().toISOString()
+            };
+            await db.createNotification(notif);
+          }
+        } catch (e) {
+          console.error('Failed to notify wholesaler on order acceptance', e);
+        }
+      }
+
+      if (currentUser) {
+        const fetchedNotifs = await db.getNotifications(currentUser.id);
+        setNotifications(fetchedNotifs);
+      }
     }
   };
 
@@ -1055,19 +1123,77 @@ export default function App() {
             <div className="flex items-center gap-3">
 
 
-              {/* Simple alert button */}
+            <div className="relative">
+              {/* Bell button */}
               <button
                 onClick={() => {
-                  setShowNotificationCount(false);
-                  alert('Notification Log:\n- Pema Shrestha has sent a counter offer on Tomato (Local)\n- Vehicle BA 3 KHA 8492 departed from Benighat hub.');
+                  setShowNotifDropdown(!showNotifDropdown);
                 }}
                 className="p-2.5 bg-neutral-50 hover:bg-neutral-100 text-neutral-600 rounded-2xl transition relative cursor-pointer"
               >
                 <Bell size={16} />
-                {showNotificationCount && (
+                {notifications.some(n => !n.isRead) && (
                   <span className="w-2 h-2 bg-red-500 rounded-full absolute top-2 right-2 ring-2 ring-white"></span>
                 )}
               </button>
+ 
+              {/* Notifications Dropdown Panel */}
+              {showNotifDropdown && (
+                <div className="absolute right-0 mt-2 w-80 bg-white border border-neutral-150 rounded-2xl shadow-xl z-50 p-4 space-y-3 max-h-96 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="flex justify-between items-center border-b border-neutral-50 pb-2">
+                    <span className="text-xs font-black text-neutral-800">Notifications</span>
+                    {notifications.some(n => !n.isRead) && (
+                      <button 
+                        onClick={async () => {
+                          for (const n of notifications) {
+                            if (!n.isRead) {
+                              await db.markNotificationRead(n.id);
+                            }
+                          }
+                          setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+                        }}
+                        className="text-[10px] text-emerald-600 hover:underline font-bold"
+                      >
+                        Mark all read
+                      </button>
+                    )}
+                  </div>
+ 
+                  {notifications.length === 0 ? (
+                    <div className="text-center py-6 text-neutral-400 text-xs font-medium">
+                      No notifications yet
+                    </div>
+                  ) : (
+                    <div className="space-y-2.5 divide-y divide-neutral-50">
+                      {notifications.map(n => (
+                        <div 
+                          key={n.id}
+                          onClick={async () => {
+                            if (!n.isRead) {
+                              await db.markNotificationRead(n.id);
+                              setNotifications(prev => prev.map(item => item.id === n.id ? { ...item, isRead: true } : item));
+                            }
+                            if (n.orderId) {
+                              setSelectedOrderId(n.orderId);
+                              setActiveTab('orders');
+                            }
+                            setShowNotifDropdown(false);
+                          }}
+                          className={`pt-2.5 text-xs text-left cursor-pointer transition ${n.isRead ? 'opacity-65' : 'font-semibold'}`}
+                        >
+                          <div className="flex justify-between items-start">
+                            <span className="text-[11px] font-bold text-neutral-800 block leading-tight">{n.title}</span>
+                            {!n.isRead && <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0 mt-1"></span>}
+                          </div>
+                          <p className="text-[10px] text-neutral-500 mt-1 leading-normal">{n.message}</p>
+                          <span className="text-[8px] text-neutral-400 block mt-1 font-mono">{new Date(n.createdAt).toLocaleTimeString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
             </div>
           </header>
 
@@ -1114,11 +1240,13 @@ export default function App() {
                 currentUser={currentUser}
               />
             )}
-            {activeTab === 'orders' && (
+             {activeTab === 'orders' && (
               <OrdersPage
                 orders={orders}
                 currentUser={currentUser}
                 onUpdateOrderStatus={handleUpdateOrderStatus}
+                selectedOrderId={selectedOrderId}
+                onSelectOrder={setSelectedOrderId}
               />
             )}
             {activeTab === 'cart' && (

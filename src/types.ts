@@ -108,3 +108,13 @@ export interface KalimatiRate {
   unit: string; // e.g. "KG", "Crate"
   change?: 'up' | 'down' | 'stable';
 }
+
+export interface AppNotification {
+  id: string;
+  userId: string;
+  title: string;
+  message: string;
+  orderId?: string;
+  isRead: boolean;
+  createdAt: string;
+}

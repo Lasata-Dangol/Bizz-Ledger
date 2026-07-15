@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { UserProfile, VegetableListing, BargainRoom, Order, BargainMessage, KalimatiRate } from '../types';
+import { UserProfile, VegetableListing, BargainRoom, Order, BargainMessage, KalimatiRate, AppNotification } from '../types';
 import { MOCK_USERS, KALIMATI_RATES, INITIAL_LISTINGS, INITIAL_ROOMS, INITIAL_ORDERS } from '../mockData';
 
 const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL || '';
@@ -387,6 +387,82 @@ class DirectLedgerDb {
     } catch {
       return initialSeed;
     }
+  }
+
+  // --- Notifications Operations ---
+  async getNotifications(userId: string): Promise<AppNotification[]> {
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('notifications')
+          .select('*')
+          .eq('userId', userId)
+          .order('createdAt', { ascending: false });
+        if (!error && data) return data as AppNotification[];
+      } catch (e) {
+        console.warn('Supabase notifications fetch failed, falling back to local storage', e);
+      }
+    }
+    const list = this.getLocalList<AppNotification>('notifications', []);
+    return list.filter(n => n.userId === userId).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  async createNotification(notification: AppNotification): Promise<AppNotification> {
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('notifications')
+          .insert(notification)
+          .select()
+          .single();
+        if (!error && data) return data as AppNotification;
+      } catch (e) {
+        console.warn('Supabase notification insertion failed, falling back to local storage', e);
+      }
+    }
+    const list = this.getLocalList<AppNotification>('notifications', []);
+    list.unshift(notification);
+    this.setLocalList('notifications', list);
+    return notification;
+  }
+
+  async markNotificationRead(id: string): Promise<boolean> {
+    if (supabase) {
+      try {
+        const { error } = await supabase
+          .from('notifications')
+          .update({ isRead: true })
+          .eq('id', id);
+        if (!error) return true;
+      } catch (e) {
+        console.warn('Supabase notification update failed, falling back to local storage', e);
+      }
+    }
+    const list = this.getLocalList<AppNotification>('notifications', []);
+    const idx = list.findIndex(n => n.id === id);
+    if (idx !== -1) {
+      list[idx].isRead = true;
+      this.setLocalList('notifications', list);
+      return true;
+    }
+    return false;
+  }
+
+  async getProfileByName(name: string): Promise<UserProfile | null> {
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('name', name)
+          .maybeSingle();
+        if (!error && data) return data as UserProfile;
+      } catch (e) {
+        console.warn('Supabase profile query by name failed, falling back to local storage', e);
+      }
+    }
+    const profiles = this.getLocalList<UserProfile>('profiles', MOCK_USERS);
+    return profiles.find(p => p.name === name) || null;
   }
 
   private setLocalList<T>(key: string, list: T[]) {
