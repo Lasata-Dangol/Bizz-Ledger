@@ -44,7 +44,7 @@ export default function CartPage({
 }: CartPageProps) {
   
   const [transportMethod, setTransportMethod] = useState<'Standard' | 'Refrigerated' | 'Expedited'>('Standard');
-  const [paymentMethod, setPaymentMethod] = useState<'Escrow' | 'QR' | 'Ledger'>('Escrow');
+  const [paymentMethod, setPaymentMethod] = useState<'Esewa' | 'QR'>('Esewa');
   const [isCompleted, setIsCompleted] = useState(false);
   const [createdOrders, setCreatedOrders] = useState<Order[]>([]);
 
@@ -350,16 +350,16 @@ export default function CartPage({
           <label className="text-[11px] font-bold text-neutral-500 uppercase font-mono block">Choose How To Pay</label>
           <div className="grid grid-cols-1 gap-2">
             <button
-              onClick={() => setPaymentMethod('Escrow')}
+              onClick={() => setPaymentMethod('Esewa')}
               className={`p-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 text-left cursor-pointer border ${
-                paymentMethod === 'Escrow' 
+                paymentMethod === 'Esewa' 
                   ? 'border-emerald-600 bg-emerald-50 text-emerald-950' 
                   : 'border-neutral-150 hover:bg-neutral-50 text-neutral-600'
               }`}
             >
               <ShieldCheck size={16} className="text-emerald-600" />
               <div>
-                <span className="block">Secure Escrow Payment</span>
+                <span className="block">Secure Esewa Payment</span>
                 <span className="block text-[9px] font-normal text-neutral-400">Farmer gets money after you check cargo quality</span>
               </div>
             </button>
@@ -376,21 +376,6 @@ export default function CartPage({
               <div>
                 <span className="block">Scan & Pay QR</span>
                 <span className="block text-[9px] font-normal text-neutral-400">Pay instantly using your Fonepay / Bank app QR</span>
-              </div>
-            </button>
-
-            <button
-              onClick={() => setPaymentMethod('Ledger')}
-              className={`p-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 text-left cursor-pointer border ${
-                paymentMethod === 'Ledger' 
-                  ? 'border-emerald-600 bg-emerald-50 text-emerald-950' 
-                  : 'border-neutral-150 hover:bg-neutral-50 text-neutral-600'
-              }`}
-            >
-              <FileText size={16} className="text-emerald-600" />
-              <div>
-                <span className="block">Pay Later Ledger Book</span>
-                <span className="block text-[9px] font-normal text-neutral-400">Write in store digital register book and pay at end of month</span>
               </div>
             </button>
           </div>
