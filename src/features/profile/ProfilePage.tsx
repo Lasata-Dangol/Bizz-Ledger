@@ -9,16 +9,19 @@ import {
   Edit3, 
   X,
   History,
-  FileText
+  FileText,
+  ArrowLeft
 } from 'lucide-react';
 
 interface ProfilePageProps {
   currentUser: UserProfile;
   orders: Order[];
   onUpdateProfile: (updatedProfile: UserProfile) => void;
+  isViewOnly?: boolean;
+  onBack?: () => void;
 }
 
-export default function ProfilePage({ currentUser, orders, onUpdateProfile }: ProfilePageProps) {
+export default function ProfilePage({ currentUser, orders, onUpdateProfile, isViewOnly = false, onBack }: ProfilePageProps) {
   const isFarmer = currentUser.role === 'FARMER';
   
   // Edit mode toggle state
@@ -96,14 +99,28 @@ export default function ProfilePage({ currentUser, orders, onUpdateProfile }: Pr
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       
+      {isViewOnly && onBack && (
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1.5 text-xs font-bold text-neutral-600 hover:text-emerald-700 transition cursor-pointer select-none"
+        >
+          <ArrowLeft size={14} />
+          Back to Browse Crops
+        </button>
+      )}
+
       {/* 1. Header with Name & Quick Edit Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-black text-neutral-850 tracking-tight">Your Verified Account Details</h2>
-          <p className="text-xs text-neutral-500">View and update your verified trading parameters below</p>
+          <h2 className="text-xl font-black text-neutral-850 tracking-tight">
+            {isViewOnly ? `${currentUser.name}'s Verified Profile` : 'Your Verified Account Details'}
+          </h2>
+          <p className="text-xs text-neutral-500">
+            {isViewOnly ? 'View seller specifications and details below' : 'View and update your verified trading parameters below'}
+          </p>
         </div>
 
-        {!isEditing && (
+        {!isEditing && !isViewOnly && (
           <button 
             type="button"
             onClick={() => setIsEditing(true)}

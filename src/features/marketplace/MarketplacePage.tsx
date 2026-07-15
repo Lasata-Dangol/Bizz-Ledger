@@ -7,9 +7,10 @@ interface MarketplacePageProps {
   onStartNegotiation: (listing: VegetableListing, initialOffer: number, quantity: number) => void;
   onAddToCart?: (listing: VegetableListing) => void;
   currentUser: UserProfile;
+  onViewFarmer?: (farmerId: string) => void;
 }
 
-export default function MarketplacePage({ listings, onStartNegotiation, onAddToCart, currentUser }: MarketplacePageProps) {
+export default function MarketplacePage({ listings, onStartNegotiation, onAddToCart, currentUser, onViewFarmer }: MarketplacePageProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDistrict, setSelectedDistrict] = useState('All');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -185,13 +186,14 @@ export default function MarketplacePage({ listings, onStartNegotiation, onAddToC
                         {item.farmerName[0]}
                       </div>
                       <div>
-                        <span className="block text-xs font-bold text-neutral-700 leading-tight">{item.farmerName}</span>
+                        <span 
+                          onClick={() => onViewFarmer && onViewFarmer(item.farmerId)}
+                          className="block text-xs font-bold text-neutral-700 leading-tight cursor-pointer hover:text-emerald-700 hover:underline"
+                        >
+                          {item.farmerName}
+                        </span>
                         <span className="block text-[10px] text-neutral-400 font-mono">Producer Partner</span>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg text-amber-700 font-bold text-xs">
-                      <Star size={12} className="fill-amber-400 stroke-amber-500" />
-                      {item.farmerRating}
                     </div>
                   </div>
 
@@ -245,11 +247,7 @@ export default function MarketplacePage({ listings, onStartNegotiation, onAddToC
                         Add to Basket
                       </button>
                     </div>
-                  ) : (
-                    <div className="text-center text-xs text-neutral-400 py-3 bg-neutral-50 rounded-2xl border border-dashed border-neutral-200">
-                      Switch Active Role to Wholesaler to Initiate Sourcing & Bargaining
-                    </div>
-                  )}
+                  ) : null}
                 </div>
               </div>
             );

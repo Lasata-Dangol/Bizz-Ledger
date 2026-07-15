@@ -72,6 +72,8 @@ export default function App() {
     return (saved as any) || 'dashboard';
   });
 
+  const [viewedProfile, setViewedProfile] = useState<UserProfile | null>(null);
+
   const [activeRoomId, setActiveRoomId] = useState<string | null>(() => {
     const saved = localStorage.getItem('bl_active_room_id');
     return saved || null;
@@ -550,23 +552,13 @@ export default function App() {
           </div>
         </div>
 
-        {/* Top metrics grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <div className="bg-sky-50/50 border border-sky-100/85 p-6 rounded-3xl space-y-2">
-            <span className="text-[11px] font-bold text-sky-800 uppercase tracking-wider font-mono">
-              Total Spent This Month
-            </span>
-            <div className="text-3xl font-black text-sky-950">Rs. {wholesalerTotalSpent.toLocaleString()}</div>
-            <p className="text-xs text-sky-700">From successful crop orders</p>
-          </div>
-
-          <div className="bg-amber-50/50 border border-amber-100/85 p-6 rounded-3xl space-y-2">
-            <span className="text-[11px] font-bold text-amber-800 uppercase tracking-wider font-mono">
-              My Star Rating
-            </span>
-            <div className="text-3xl font-black text-amber-950">{currentUser.rating.toFixed(1)} <span className="text-2xl text-amber-500">☆</span></div>
-            <p className="text-xs text-amber-700">From {currentUser.totalDeals || 0} completed transactions</p>
-          </div>
+        {/* Top metrics */}
+        <div className="bg-sky-50/50 border border-sky-100/85 p-6 rounded-3xl space-y-2">
+          <span className="text-[11px] font-bold text-sky-800 uppercase tracking-wider font-mono">
+            Total Spent This Month
+          </span>
+          <div className="text-3xl font-black text-sky-950">Rs. {wholesalerTotalSpent.toLocaleString()}</div>
+          <p className="text-xs text-sky-700">From successful crop orders</p>
         </div>
 
         {/* Columns: Charts and Regional hubs */}
@@ -759,7 +751,7 @@ export default function App() {
               {/* Sidebar Tab Options */}
               <nav className="space-y-1">
                 <button
-                  onClick={() => setActiveTab('dashboard')}
+                  onClick={() => { setViewedProfile(null); setActiveTab('dashboard'); }}
                   className={`w-full text-left p-2.5 rounded-xl text-xs font-bold leading-none flex items-center gap-3 cursor-pointer duration-150 ${activeTab === 'dashboard'
                       ? 'bg-neutral-900 text-white shadow-md'
                       : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
@@ -768,9 +760,9 @@ export default function App() {
                   <LayoutDashboard size={14} />
                   Dashboard
                 </button>
-
+ 
                 <button
-                  onClick={() => setActiveTab('marketplace')}
+                  onClick={() => { setViewedProfile(null); setActiveTab('marketplace'); }}
                   className={`w-full text-left p-2.5 rounded-xl text-xs font-bold leading-none flex items-center gap-3 cursor-pointer duration-150 ${activeTab === 'marketplace'
                       ? 'bg-neutral-900 text-white shadow-md'
                       : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
@@ -779,11 +771,11 @@ export default function App() {
                   <Boxes size={14} />
                   Browse Crops
                 </button>
-
-
+ 
+ 
                 {currentUser.role === 'FARMER' && (
                   <button
-                    onClick={() => setActiveTab('inventory')}
+                    onClick={() => { setViewedProfile(null); setActiveTab('inventory'); }}
                     className={`w-full text-left p-2.5 rounded-xl text-xs font-bold leading-none flex items-center gap-3 cursor-pointer duration-150 ${activeTab === 'inventory'
                         ? 'bg-neutral-900 text-white shadow-md'
                         : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
@@ -793,10 +785,10 @@ export default function App() {
                     My Vegetable List
                   </button>
                 )}
-
+ 
                 {currentUser.role === 'WHOLESALER' && (
                   <button
-                    onClick={() => setActiveTab('cart')}
+                    onClick={() => { setViewedProfile(null); setActiveTab('cart'); }}
                     className={`w-full text-left p-2.5 rounded-xl text-xs font-bold leading-none flex items-center justify-between cursor-pointer duration-150 ${activeTab === 'cart'
                         ? 'bg-neutral-900 text-white shadow-md'
                         : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
@@ -813,9 +805,9 @@ export default function App() {
                     )}
                   </button>
                 )}
-
+ 
                 <button
-                  onClick={() => setActiveTab('orders')}
+                  onClick={() => { setViewedProfile(null); setActiveTab('orders'); }}
                   className={`w-full text-left p-2.5 rounded-xl text-xs font-bold leading-none flex items-center justify-between cursor-pointer duration-150 ${activeTab === 'orders'
                       ? 'bg-neutral-900 text-white shadow-md'
                       : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
@@ -831,10 +823,10 @@ export default function App() {
                     </span>
                   )}
                 </button>
-
+ 
                 <button
-                  onClick={() => setActiveTab('profile')}
-                  className={`w-full text-left p-2.5 rounded-xl text-xs font-bold leading-none flex items-center gap-3 cursor-pointer duration-150 ${activeTab === 'profile'
+                  onClick={() => { setViewedProfile(null); setActiveTab('profile'); }}
+                  className={`w-full text-left p-2.5 rounded-xl text-xs font-bold leading-none flex items-center gap-3 cursor-pointer duration-150 ${activeTab === 'profile' && !viewedProfile
                       ? 'bg-neutral-900 text-white shadow-md'
                       : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
                     }`}
@@ -920,7 +912,7 @@ export default function App() {
             {/* Sidebar Tab Options */}
             <nav className="space-y-1">
               <button
-                onClick={() => setActiveTab('dashboard')}
+                onClick={() => { setViewedProfile(null); setActiveTab('dashboard'); }}
                 className={`w-full text-left p-2.5 rounded-xl text-xs font-bold leading-none flex items-center gap-3 cursor-pointer duration-150 ${activeTab === 'dashboard'
                     ? 'bg-neutral-900 text-white shadow-md'
                     : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
@@ -931,7 +923,7 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => setActiveTab('marketplace')}
+                onClick={() => { setViewedProfile(null); setActiveTab('marketplace'); }}
                 className={`w-full text-left p-2.5 rounded-xl text-xs font-bold leading-none flex items-center gap-3 cursor-pointer duration-150 ${activeTab === 'marketplace'
                     ? 'bg-neutral-900 text-white shadow-md'
                     : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
@@ -944,7 +936,7 @@ export default function App() {
 
               {currentUser.role === 'FARMER' && (
                 <button
-                  onClick={() => setActiveTab('inventory')}
+                  onClick={() => { setViewedProfile(null); setActiveTab('inventory'); }}
                   className={`w-full text-left p-2.5 rounded-xl text-xs font-bold leading-none flex items-center gap-3 cursor-pointer duration-150 ${activeTab === 'inventory'
                       ? 'bg-neutral-900 text-white shadow-md'
                       : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
@@ -957,7 +949,7 @@ export default function App() {
 
               {currentUser.role === 'WHOLESALER' && (
                 <button
-                  onClick={() => setActiveTab('cart')}
+                  onClick={() => { setViewedProfile(null); setActiveTab('cart'); }}
                   className={`w-full text-left p-2.5 rounded-xl text-xs font-bold leading-none flex items-center justify-between cursor-pointer duration-150 ${activeTab === 'cart'
                       ? 'bg-neutral-900 text-white shadow-md'
                       : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
@@ -976,7 +968,7 @@ export default function App() {
               )}
 
               <button
-                onClick={() => setActiveTab('orders')}
+                onClick={() => { setViewedProfile(null); setActiveTab('orders'); }}
                 className={`w-full text-left p-2.5 rounded-xl text-xs font-bold leading-none flex items-center justify-between cursor-pointer duration-150 ${activeTab === 'orders'
                     ? 'bg-neutral-900 text-white shadow-md'
                     : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
@@ -994,8 +986,8 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => setActiveTab('profile')}
-                className={`w-full text-left p-2.5 rounded-xl text-xs font-bold leading-none flex items-center gap-3 cursor-pointer duration-150 ${activeTab === 'profile'
+                onClick={() => { setViewedProfile(null); setActiveTab('profile'); }}
+                className={`w-full text-left p-2.5 rounded-xl text-xs font-bold leading-none flex items-center gap-3 cursor-pointer duration-150 ${activeTab === 'profile' && !viewedProfile
                     ? 'bg-neutral-900 text-white shadow-md'
                     : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
                   }`}
@@ -1082,12 +1074,23 @@ export default function App() {
           {/* Dynamic Tab Panel Switching */}
           <div className="min-h-[500px]">
             {activeTab === 'dashboard' && renderDashboard()}
-            {activeTab === 'marketplace' && (
+             {activeTab === 'marketplace' && (
               <MarketplacePage
                 listings={listings}
                 onStartNegotiation={handleStartNegotiation}
                 onAddToCart={handleAddToCart}
                 currentUser={currentUser}
+                onViewFarmer={async (farmerId) => {
+                  try {
+                    const profile = await db.getProfile(farmerId);
+                    if (profile) {
+                      setViewedProfile(profile);
+                      setActiveTab('profile');
+                    }
+                  } catch (e) {
+                    console.error('Failed to load farmer profile', e);
+                  }
+                }}
               />
             )}
             {activeTab === 'bargain' && (
@@ -1132,11 +1135,16 @@ export default function App() {
             )}
             {activeTab === 'profile' && (
               <ProfilePage
-                currentUser={currentUser}
+                currentUser={viewedProfile || currentUser}
                 orders={orders}
                 onUpdateProfile={async (updatedUser) => {
                   await db.saveProfile(updatedUser);
                   setCurrentUser(updatedUser);
+                }}
+                isViewOnly={!!viewedProfile && viewedProfile.id !== currentUser.id}
+                onBack={() => {
+                  setViewedProfile(null);
+                  setActiveTab('marketplace');
                 }}
               />
             )}
