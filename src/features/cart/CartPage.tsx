@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { VegetableListing, UserProfile, Order } from '../../types';
-import { 
-  ShoppingCart, 
-  Trash2, 
-  CreditCard, 
-  ArrowRight, 
-  Truck, 
-  MapPin, 
-  CheckCircle, 
-  Sparkles, 
+import {
+  ShoppingCart,
+  Trash2,
+  CreditCard,
+  ArrowRight,
+  Truck,
+  MapPin,
+  CheckCircle,
+  Sparkles,
   FileText,
   AlertTriangle,
   QrCode,
@@ -42,7 +42,7 @@ export default function CartPage({
   onNavigateToDirectory,
   onNavigateToOrders
 }: CartPageProps) {
-  
+
   const [transportMethod, setTransportMethod] = useState<'Standard' | 'Refrigerated' | 'Expedited'>('Standard');
   const [paymentMethod, setPaymentMethod] = useState<'Esewa' | 'QR'>('Esewa');
   const [isCompleted, setIsCompleted] = useState(false);
@@ -69,7 +69,7 @@ export default function CartPage({
 
   // Calculations
   const subtotal = cart.reduce((acc, item) => acc + (item.listing.pricePerCrate * item.quantity), 0);
-  
+
   // Logistics cost
   const logisticsBaseCost = cart.reduce((acc, item) => {
     const rate = getLogisticsRatePerCrate(item.listing.district);
@@ -165,9 +165,9 @@ export default function CartPage({
               setIsCompleted(false);
               onNavigateToOrders();
             }}
-            className="w-full bg-neutral-900 hover:bg-neutral-800 text-white font-extrabold text-xs py-3.5 px-6 rounded-xl cursor-pointer transition flex items-center justify-center gap-1.5"
+            className="w-full bg-neutral-900 hover:bg-neutral-850 text-white font-extrabold text-xs py-3.5 px-6 rounded-xl cursor-pointer transition flex items-center justify-center gap-1.5"
           >
-            Track My Trucks & Orders
+            View My Delivery Bills & Orders
             <ArrowRight size={14} />
           </button>
           <button
@@ -187,10 +187,10 @@ export default function CartPage({
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-      
+
       {/* List / Left Column (8 cols) */}
       <div className="lg:col-span-8 space-y-4">
-        
+
         {/* Header summary of Cart */}
         <div className="bg-white border border-neutral-100 rounded-3xl p-5 shadow-[0_4px_25px_rgba(0,0,0,0.015)] flex justify-between items-center">
           <div>
@@ -233,15 +233,15 @@ export default function CartPage({
               const unitLogisticsRate = getLogisticsRatePerCrate(item.listing.district);
 
               return (
-                <div 
+                <div
                   key={item.listing.id}
                   className="bg-white border border-neutral-100 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm"
                 >
                   {/* Left segment details */}
                   <div className="flex gap-3">
-                    <img 
-                      src={item.listing.imageUrl} 
-                      alt={item.listing.cropName} 
+                    <img
+                      src={item.listing.imageUrl}
+                      alt={item.listing.cropName}
                       className="w-16 h-16 rounded-xl object-cover border"
                       referrerPolicy="no-referrer"
                     />
@@ -330,11 +330,10 @@ export default function CartPage({
               <button
                 key={method}
                 onClick={() => setTransportMethod(method)}
-                className={`py-2 px-1 rounded-xl text-[11px] font-bold transition text-center cursor-pointer ${
-                  transportMethod === method 
-                    ? 'bg-neutral-900 text-white shadow-xs' 
+                className={`py-2 px-1 rounded-xl text-[11px] font-bold transition text-center cursor-pointer ${transportMethod === method
+                    ? 'bg-neutral-900 text-white shadow-xs'
                     : 'bg-neutral-50 text-neutral-600 hover:bg-neutral-100'
-                }`}
+                  }`}
               >
                 {method === 'Standard' ? 'Normal Truck' : method === 'Refrigerated' ? 'Cold Truck' : 'Fast Truck'}
                 <span className="block text-[8px] font-mono text-neutral-400">
@@ -351,11 +350,10 @@ export default function CartPage({
           <div className="grid grid-cols-1 gap-2">
             <button
               onClick={() => setPaymentMethod('Esewa')}
-              className={`p-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 text-left cursor-pointer border ${
-                paymentMethod === 'Esewa' 
-                  ? 'border-emerald-600 bg-emerald-50 text-emerald-950' 
+              className={`p-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 text-left cursor-pointer border ${paymentMethod === 'Esewa'
+                  ? 'border-emerald-600 bg-emerald-50 text-emerald-950'
                   : 'border-neutral-150 hover:bg-neutral-50 text-neutral-600'
-              }`}
+                }`}
             >
               <ShieldCheck size={16} className="text-emerald-600" />
               <div>
@@ -366,11 +364,10 @@ export default function CartPage({
 
             <button
               onClick={() => setPaymentMethod('QR')}
-              className={`p-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 text-left cursor-pointer border ${
-                paymentMethod === 'QR' 
-                  ? 'border-emerald-600 bg-emerald-50 text-emerald-950' 
+              className={`p-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 text-left cursor-pointer border ${paymentMethod === 'QR'
+                  ? 'border-emerald-600 bg-emerald-50 text-emerald-950'
                   : 'border-neutral-150 hover:bg-neutral-50 text-neutral-600'
-              }`}
+                }`}
             >
               <QrCode size={16} className="text-emerald-600" />
               <div>
@@ -424,11 +421,10 @@ export default function CartPage({
           <button
             onClick={handleCheckoutSubmit}
             disabled={cart.length === 0}
-            className={`w-full font-extrabold text-xs py-3.5 px-4 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer duration-150 shadow-md ${
-              cart.length === 0 
-                ? 'bg-neutral-100 text-neutral-400 cursor-not-allowed shadow-none' 
+            className={`w-full font-extrabold text-xs py-3.5 px-4 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer duration-150 shadow-md ${cart.length === 0
+                ? 'bg-neutral-100 text-neutral-400 cursor-not-allowed shadow-none'
                 : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-            }`}
+              }`}
           >
             <CreditCard size={15} />
             Confirm Order and Pay Now

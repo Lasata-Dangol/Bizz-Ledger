@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Order, UserProfile } from '../../types';
-import { Truck, CheckCircle, Package2, Compass, PhoneCall, Award, MapPin, Printer } from 'lucide-react';
+import { Truck, PhoneCall, Printer } from 'lucide-react';
 
 interface OrdersPageProps {
   orders: Order[];
@@ -13,24 +13,15 @@ export default function OrdersPage({ orders, currentUser, onUpdateOrderStatus }:
 
   const activeOrder = orders.find(o => o.orderId === selectedOrderId) || orders[0];
 
-  const handleProgressStatus = (order: Order) => {
-    let nextStatus: 'PROCESSING' | 'IN_TRANSIT' | 'ARRIVED' = 'PROCESSING';
-    if (order.status === 'PROCESSING') nextStatus = 'IN_TRANSIT';
-    else if (order.status === 'IN_TRANSIT') nextStatus = 'ARRIVED';
-    else return;
-
-    onUpdateOrderStatus(order.orderId, nextStatus);
-  };
-
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-black text-neutral-800 tracking-tight">Your Orders & Delivery Bills</h2>
-        <p className="text-xs text-neutral-500">View your delivery details, track vehicles on the road, and print bills.</p>
+        <p className="text-xs text-neutral-500">View your delivery details and print bills.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-        
+
         {/* Orders side list column */}
         <div className="lg:col-span-4 bg-white border border-neutral-100 rounded-3xl p-5 shadow-[0_4px_20px_rgba(0,0,0,0.01)] flex flex-col gap-4">
           <div>
@@ -45,23 +36,21 @@ export default function OrdersPage({ orders, currentUser, onUpdateOrderStatus }:
                 <button
                   key={order.orderId}
                   onClick={() => setSelectedOrderId(order.orderId)}
-                  className={`w-full text-left p-3.5 rounded-2xl border transition duration-150 flex justify-between items-center cursor-pointer ${
-                    isSelected 
-                      ? 'bg-neutral-900 border-neutral-950 text-white shadow-md' 
+                  className={`w-full text-left p-3.5 rounded-2xl border transition duration-150 flex justify-between items-center cursor-pointer ${isSelected
+                      ? 'bg-neutral-900 border-neutral-950 text-white shadow-md'
                       : 'bg-neutral-50/50 hover:bg-neutral-100 border-neutral-150 text-neutral-700'
-                  }`}
+                    }`}
                 >
                   <div className="space-y-0.5">
                     <span className="text-[10px] uppercase tracking-wider font-mono opacity-80 block">{order.cropName}</span>
                     <span className="font-extrabold text-xs block">ID: {order.orderId.substring(6)}</span>
                   </div>
-                  <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase scale-90 ${
-                    order.status === 'ARRIVED' 
-                      ? 'bg-emerald-500 text-white' 
-                      : order.status === 'IN_TRANSIT' 
-                      ? 'bg-amber-400 text-amber-950' 
-                      : 'bg-neutral-200 text-neutral-700'
-                  }`}>
+                  <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase scale-90 ${order.status === 'ARRIVED'
+                      ? 'bg-emerald-500 text-white'
+                      : order.status === 'IN_TRANSIT'
+                        ? 'bg-amber-400 text-amber-950'
+                        : 'bg-neutral-200 text-neutral-700'
+                    }`}>
                     {order.status}
                   </span>
                 </button>
@@ -74,72 +63,6 @@ export default function OrdersPage({ orders, currentUser, onUpdateOrderStatus }:
         <div className="lg:col-span-8 space-y-6">
           {activeOrder ? (
             <>
-              {/* Stepper Timeline Tracker */}
-              <div className="bg-white border border-neutral-100 rounded-3xl p-6 shadow-[0_4px_25px_rgba(0,0,0,0.02)] space-y-6">
-                <div className="flex justify-between items-center">
-                  <h3 className="font-extrabold text-neutral-850 text-sm">Delivery Tracker</h3>
-                  
-                  {/* Transit simulator status block */}
-                  {currentUser.role !== 'WHOLESALER' && activeOrder.status !== 'ARRIVED' && (
-                    <button 
-                      onClick={() => handleProgressStatus(activeOrder)}
-                      className="bg-neutral-900 font-bold hover:bg-neutral-850 text-white text-[11px] px-3.5 py-2 rounded-xl flex items-center gap-1 cursor-pointer transition"
-                    >
-                      <Truck size={12} className="animate-bounce" />
-                      Move Truck to Next Step →
-                    </button>
-                  )}
-                </div>
-
-                {/* Stepper visualization */}
-                <div className="grid grid-cols-3 gap-2 relative pt-2">
-                  {/* Step 1: Processing */}
-                  <div className="flex flex-col items-center text-center space-y-2 relative">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
-                      activeOrder.status === 'PROCESSING' || activeOrder.status === 'IN_TRANSIT' || activeOrder.status === 'ARRIVED'
-                        ? 'bg-neutral-900 text-white' 
-                        : 'bg-neutral-100 text-neutral-400'
-                    }`}>
-                      <Package2 size={14} />
-                    </div>
-                    <div>
-                      <span className="block font-bold text-neutral-800 text-xs">Processing</span>
-                      <span className="block text-[10px] text-neutral-400">Packed at Farm</span>
-                    </div>
-                  </div>
-
-                  {/* Step 2: In Transit */}
-                  <div className="flex flex-col items-center text-center space-y-2 relative">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
-                      activeOrder.status === 'IN_TRANSIT' || activeOrder.status === 'ARRIVED'
-                        ? 'bg-amber-400 text-neutral-900 shadow-xs' 
-                        : 'bg-neutral-100 text-neutral-400'
-                    }`}>
-                      <Truck size={14} />
-                    </div>
-                    <div>
-                      <span className="block font-bold text-neutral-800 text-xs">In Transit</span>
-                      <span className="block text-[10px] text-neutral-400">Driving on Highway</span>
-                    </div>
-                  </div>
-
-                  {/* Step 3: Arrived */}
-                  <div className="flex flex-col items-center text-center space-y-2 relative">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
-                      activeOrder.status === 'ARRIVED'
-                        ? 'bg-emerald-600 text-white shadow-xs' 
-                        : 'bg-neutral-100 text-neutral-400'
-                    }`}>
-                      <CheckCircle size={14} />
-                    </div>
-                    <div>
-                      <span className="block font-bold text-neutral-800 text-xs">Arrived</span>
-                      <span className="block text-[10px] text-neutral-400">Arrived at Buyer Warehouse</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
               {/* Immutable Summary Invoice Manifest Card */}
               <div id="invoice-manifest" className="bg-[#fcfdfd] border-2 border-neutral-150 rounded-3xl p-6 sm:p-8 space-y-6 relative overflow-hidden shadow-xs">
                 {/* Top background aesthetic */}
@@ -153,8 +76,8 @@ export default function OrdersPage({ orders, currentUser, onUpdateOrderStatus }:
                     </span>
                     <span className="block text-[10px] text-neutral-400 font-mono">CONTRACT AGREEMENT</span>
                   </div>
-                  <button 
-                    onClick={() => window.print()} 
+                  <button
+                    onClick={() => window.print()}
                     className="p-2 bg-white border border-neutral-200 text-neutral-600 rounded-xl hover:bg-neutral-50 transition cursor-pointer"
                     title="Print manifest"
                   >
