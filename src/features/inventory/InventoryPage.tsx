@@ -16,8 +16,7 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
   const [category, setCategory] = useState<'Tomatoes' | 'Cabbages' | 'Greens' | 'Potatoes' | 'Squash' | 'Other'>('Tomatoes');
   const [district, setDistrict] = useState('Panchkhal, Kavre');
   const [crates, setCrates] = useState(60);
-  const [targetVal, setTargetVal] = useState(1400);
-  const [floorVal, setFloorVal] = useState(1150);
+  const [priceVal, setPriceVal] = useState(1400);
   const [readyShip, setReadyShip] = useState(true);
   const [notes, setNotes] = useState('');
   const [imageUrl, setImageUrl] = useState('https://images.unsplash.com/photo-1595855759920-86582396756a?w=400&auto=format&fit=crop&q=80');
@@ -31,8 +30,7 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
     setCropName('Tomato (Local)');
     setCategory('Tomatoes');
     setCrates(60);
-    setTargetVal(1400);
-    setFloorVal(1150);
+    setPriceVal(1400);
     setReadyShip(true);
     setNotes('');
     setShowAddModal(true);
@@ -44,8 +42,7 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
     setCategory(listing.category as any);
     setDistrict(listing.district);
     setCrates(listing.quantityAvailableCrates);
-    setTargetVal(listing.targetPricePerCrate);
-    setFloorVal(listing.minimumFloorPricePerCrate);
+    setPriceVal(listing.pricePerCrate);
     setReadyShip(listing.readyToShip);
     setNotes(listing.notes || '');
     setImageUrl(listing.imageUrl);
@@ -59,8 +56,7 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
       category,
       district,
       quantityAvailableCrates: crates,
-      targetPricePerCrate: targetVal,
-      minimumFloorPricePerCrate: floorVal,
+      pricePerCrate: priceVal,
       harvestDate: new Date().toISOString().split('T')[0],
       readyToShip: readyShip,
       notes,
@@ -146,8 +142,7 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
                   <th className="py-3 px-2">Vegetable Name</th>
                   <th className="py-3 px-2">District</th>
                   <th className="py-3 px-2">Crates Available</th>
-                  <th className="py-3 px-2">My Target Price</th>
-                  <th className="py-3 px-2">Minimum Floor Price</th>
+                  <th className="py-3 px-2">Price per Crate</th>
                   <th className="py-3 px-2">Status</th>
                   <th className="py-3 px-2 text-right">Actions</th>
                 </tr>
@@ -171,8 +166,7 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
                     <td className="py-4 px-2 font-black text-neutral-700 text-sm">
                       {item.quantityAvailableCrates} <span className="text-xs font-normal">cr.</span>
                     </td>
-                    <td className="py-4 px-2 text-emerald-600 font-black">Rs. {item.targetPricePerCrate} / Cr</td>
-                    <td className="py-4 px-2 text-rose-600 font-black font-mono">Rs. {item.minimumFloorPricePerCrate} / Cr</td>
+                    <td className="py-4 px-2 text-emerald-600 font-black">Rs. {item.pricePerCrate} / Cr</td>
                     <td className="py-4 px-2">
                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold ${
                         item.readyToShip 
@@ -296,42 +290,16 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
                 </div>
               </div>
 
-              {/* Slider for pricing limits */}
-              <div className="bg-neutral-50 p-4 rounded-2xl space-y-3">
-                <div className="space-y-1">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="font-bold text-neutral-700">My Desired Selling Price</span>
-                    <span className="text-emerald-700 font-extrabold text-sm">Rs. {targetVal} / Crate</span>
-                  </div>
-                  <input 
-                    type="range"
-                    min={400}
-                    max={2500}
-                    step={50}
-                    value={targetVal}
-                    onChange={(e) => setTargetVal(Number(e.target.value))}
-                    className="w-full accent-emerald-600 cursor-pointer"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="font-bold text-neutral-700">My Lowest Accepted Price</span>
-                    <span className="text-rose-600 font-extrabold text-sm">Rs. {floorVal} / Crate</span>
-                  </div>
-                  <input 
-                    type="range"
-                    min={400}
-                    max={targetVal} // Safety floor must always be <= target price!
-                    step={50}
-                    value={floorVal}
-                    onChange={(e) => setFloorVal(Number(e.target.value))}
-                    className="w-full accent-rose-500 cursor-pointer"
-                  />
-                  <p className="text-[10px] text-neutral-400">
-                    * Buyers cannot offer less than this price.
-                  </p>
-                </div>
+              {/* Single Price Input */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-neutral-600 block">Price per Crate (Rs.)</label>
+                <input 
+                  type="number"
+                  min={100}
+                  value={priceVal}
+                  onChange={(e) => setPriceVal(Number(e.target.value))}
+                  className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-semibold focus:outline-hidden"
+                />
               </div>
 
               {/* Shipment status checklist */}
@@ -365,7 +333,33 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
                       <span className="text-[8px] text-center block mt-1 line-clamp-1 font-semibold text-neutral-600">{opt.label}</span>
                     </button>
                   ))}
+                  {!imageOptions.some(opt => opt.value === imageUrl) && imageUrl && (
+                    <div className="p-1 border rounded-lg overflow-hidden border-emerald-600 bg-emerald-50/20">
+                      <img src={imageUrl} alt="Uploaded custom photo" className="w-full h-8 object-cover rounded-md" />
+                      <span className="text-[8px] text-center block mt-1 line-clamp-1 font-semibold text-emerald-600">Custom Photo</span>
+                    </div>
+                  )}
                 </div>
+              </div>
+
+              {/* Custom Image Upload */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-neutral-600 block">Or Upload Your Own Photo</label>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        setImageUrl(reader.result as string);
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                  className="w-full text-xs text-neutral-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer"
+                />
               </div>
 
               {/* Notes */}

@@ -42,7 +42,7 @@ export default function BargainRoomPage({
         setCounterPrice(lastMsg.pricePerCrate);
         setCounterQuantity(lastMsg.quantityRequested || 20);
       } else {
-        setCounterPrice(activeListing.targetPricePerCrate);
+        setCounterPrice(activeListing.pricePerCrate);
         setCounterQuantity(30);
       }
     }
@@ -87,12 +87,12 @@ export default function BargainRoomPage({
     if (isCompleted || isWithdrawn) return;
 
     // First validate constraints if Farmer
-    if (currentUser.role === 'FARMER' && type === 'COUNTER_OFFERED' && counterPrice < activeListing.minimumFloorPricePerCrate) {
-      alert(`Error: You cannot offer less than your minimum set price of Rs. ${activeListing.minimumFloorPricePerCrate} to avoid a loss.`);
+    if (currentUser.role === 'FARMER' && type === 'COUNTER_OFFERED' && counterPrice < activeListing.pricePerCrate * 0.7) {
+      alert(`Error: You cannot offer less than 70% of your listed price of Rs. ${Math.round(activeListing.pricePerCrate * 0.7)}.`);
       return;
     }
 
-    if (currentUser.role === 'WHOLESALER' && type === 'COUNTER_OFFERED' && counterPrice > activeListing.targetPricePerCrate * 1.3) {
+    if (currentUser.role === 'WHOLESALER' && type === 'COUNTER_OFFERED' && counterPrice > activeListing.pricePerCrate * 1.3) {
       alert(`Error: You cannot offer more than 130% of the standard market rate.`);
       return;
     }
@@ -129,8 +129,8 @@ export default function BargainRoomPage({
 
       if (currentUser.role === 'WHOLESALER') {
         // Active user is Wholesaler, simulated responder is Farmer (e.g., Pema Shrestha)
-        const target = activeListing.targetPricePerCrate;
-        const floor = activeListing.minimumFloorPricePerCrate;
+        const target = activeListing.pricePerCrate;
+        const floor = Math.round(activeListing.pricePerCrate * 0.7);
 
         if (counterPrice >= target) {
           // Generous offer! Auto accept!
@@ -148,8 +148,8 @@ export default function BargainRoomPage({
         }
       } else {
         // Active user is Farmer, simulated responder is Wholesaler (e.g. Ramesh Traders)
-        const target = activeListing.targetPricePerCrate;
-        const floor = activeListing.minimumFloorPricePerCrate;
+        const target = activeListing.pricePerCrate;
+        const floor = Math.round(activeListing.pricePerCrate * 0.7);
 
         if (counterPrice <= floor + 50) {
           // Extremely bargain! Auto accept
@@ -194,7 +194,7 @@ export default function BargainRoomPage({
 
   const handleAcceptByMe = () => {
     if (isCompleted || isWithdrawn) return;
-    const finalPrice = lastOpponentOffer?.pricePerCrate || activeListing.targetPricePerCrate;
+    const finalPrice = lastOpponentOffer?.pricePerCrate || activeListing.pricePerCrate;
     const finalQty = lastOpponentOffer?.quantityRequested || 25;
     onAcceptContract(activeRoom.roomId, finalPrice, finalQty);
   };
@@ -252,7 +252,7 @@ export default function BargainRoomPage({
                     With: {currentUser.role === 'FARMER' ? room.wholesalerName : room.farmerName}
                   </span>
                   <span className={`font-mono font-bold ${isSelected ? 'text-amber-300' : 'text-emerald-700'}`}>
-                    Last: Rs. {lastRoomMsg?.pricePerCrate || rListing.targetPricePerCrate}/Cr
+                    Last: Rs. {lastRoomMsg?.pricePerCrate || rListing.pricePerCrate}/Cr
                   </span>
                 </div>
               </button>
@@ -412,8 +412,8 @@ export default function BargainRoomPage({
                   </div>
                   <input 
                     type="range"
-                    min={activeListing.minimumFloorPricePerCrate}
-                    max={activeListing.targetPricePerCrate * 1.25}
+                    min={Math.round(activeListing.pricePerCrate * 0.5)}
+                    max={activeListing.pricePerCrate * 1.5}
                     step={25}
                     value={counterPrice}
                     disabled={!isMyTurn}
@@ -421,8 +421,8 @@ export default function BargainRoomPage({
                     className="w-full accent-emerald-600 cursor-pointer disabled:opacity-50"
                   />
                   <div className="flex justify-between text-[9px] text-neutral-400 font-mono">
-                    <span>Floor: Rs. {activeListing.minimumFloorPricePerCrate}</span>
-                    <span>Target: Rs. {activeListing.targetPricePerCrate}</span>
+                    <span>Min: Rs. {Math.round(activeListing.pricePerCrate * 0.5)}</span>
+                    <span>Max: Rs. {Math.round(activeListing.pricePerCrate * 1.5)}</span>
                   </div>
                 </div>
 

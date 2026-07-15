@@ -44,8 +44,7 @@ export interface VegetableListing {
   farmerName: string;
   farmerRating: number;
   quantityAvailableCrates: number; // crates (~20 kg each)
-  targetPricePerCrate: number; // target price Rs.
-  minimumFloorPricePerCrate: number; // farmer won't go lower than this Rs.
+  pricePerCrate: number; // price Rs. per crate
   harvestDate: string;
   readyToShip: boolean;
   notes?: string;

@@ -68,7 +68,7 @@ export default function CartPage({
   };
 
   // Calculations
-  const subtotal = cart.reduce((acc, item) => acc + (item.listing.targetPricePerCrate * item.quantity), 0);
+  const subtotal = cart.reduce((acc, item) => acc + (item.listing.pricePerCrate * item.quantity), 0);
   
   // Logistics cost
   const logisticsBaseCost = cart.reduce((acc, item) => {
@@ -98,9 +98,9 @@ export default function CartPage({
         cropName: item.listing.cropName,
         farmerName: item.listing.farmerName,
         wholesalerName: currentUser.name,
-        finalPricePerCrate: item.listing.targetPricePerCrate,
+        finalPricePerCrate: item.listing.pricePerCrate,
         quantity: item.quantity,
-        totalPrice: item.listing.targetPricePerCrate * item.quantity,
+        totalPrice: item.listing.pricePerCrate * item.quantity,
         status: 'PROCESSING',
         vehicleNumber: `BA 3 KHA ${Math.floor(1000 + Math.random() * 9000)}`,
         driverPhone: '+977-98' + Math.floor(10000000 + Math.random() * 90000000).toString(),
@@ -229,7 +229,7 @@ export default function CartPage({
         ) : (
           <div className="space-y-3">
             {cart.map((item) => {
-              const itemSubtotal = item.listing.targetPricePerCrate * item.quantity;
+              const itemSubtotal = item.listing.pricePerCrate * item.quantity;
               const unitLogisticsRate = getLogisticsRatePerCrate(item.listing.district);
 
               return (
@@ -282,7 +282,7 @@ export default function CartPage({
 
                     <div className="text-right">
                       <div className="text-xs text-neutral-400 font-mono">
-                        Rs. {item.listing.targetPricePerCrate} / Cr
+                        Rs. {item.listing.pricePerCrate} / Cr
                       </div>
                       <div className="font-black text-neutral-800 text-sm">
                         Rs. {itemSubtotal}

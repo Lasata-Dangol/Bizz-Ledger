@@ -34,10 +34,10 @@ export default function MarketplacePage({ listings, onStartNegotiation, onAddToC
 
   const openBargainModal = (item: VegetableListing) => {
     setNegotiatingListing(item);
-    // Suggest some realistic startup pricing (usually 10-15% below target targetPricePerCrate)
-    setProposedPrice(Math.round(item.targetPricePerCrate * 0.85));
+    // Suggest some realistic startup pricing (usually 10-15% below pricePerCrate)
+    setProposedPrice(Math.round(item.pricePerCrate * 0.85));
     setProposedQuantity(Math.min(30, item.quantityAvailableCrates));
-    setIntroText(`Namaskar, we are interested in booking ${Math.min(30, item.quantityAvailableCrates)} crates. Can you accept Rs. ${Math.round(item.targetPricePerCrate * 0.85)} per crate?`);
+    setIntroText(`Namaskar, we are interested in booking ${Math.min(30, item.quantityAvailableCrates)} crates. Can you accept Rs. ${Math.round(item.pricePerCrate * 0.85)} per crate?`);
   };
 
   const submitNegotiation = () => {
@@ -210,11 +210,11 @@ export default function MarketplacePage({ listings, onStartNegotiation, onAddToC
                     </div>
 
                     <div>
-                      <span className="block text-[10px] text-neutral-400 uppercase font-mono tracking-wider font-bold">Target Price</span>
+                      <span className="block text-[10px] text-neutral-400 uppercase font-mono tracking-wider font-bold">Price</span>
                       <span className="text-[15px] font-black text-emerald-600">
-                        Rs. {item.targetPricePerCrate} <span className="text-xs font-normal text-neutral-500">/ Cr</span>
+                        Rs. {item.pricePerCrate} <span className="text-xs font-normal text-neutral-500">/ Cr</span>
                       </span>
-                      <span className="block text-[11px] text-neutral-400 font-mono">Rs. {item.targetPricePerCrate / 20}/kg target</span>
+                      <span className="block text-[11px] text-neutral-400 font-mono">Rs. {item.pricePerCrate / 20}/kg</span>
                     </div>
                   </div>
 
@@ -223,9 +223,6 @@ export default function MarketplacePage({ listings, onStartNegotiation, onAddToC
                     <span className="flex items-center gap-1.5 font-mono">
                       <Calendar size={13} />
                       Harvested: {item.harvestDate}
-                    </span>
-                    <span className="font-bold text-emerald-700 text-[11px] flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded">
-                      Floor Price: Rs. {item.minimumFloorPricePerCrate}/Cr
                     </span>
                   </div>
                 </div>
@@ -287,7 +284,7 @@ export default function MarketplacePage({ listings, onStartNegotiation, onAddToC
               <div>
                 <span className="block text-xs leading-none text-neutral-400 font-mono font-bold uppercase">{negotiatingListing.district}</span>
                 <span className="block font-bold text-neutral-800 text-sm mt-0.5">{negotiatingListing.cropName}</span>
-                <span className="block text-xs text-emerald-600 mt-0.5 font-bold">Target Price: Rs. {negotiatingListing.targetPricePerCrate} / Cr</span>
+                <span className="block text-xs text-emerald-600 mt-0.5 font-bold">Price: Rs. {negotiatingListing.pricePerCrate} / Cr</span>
               </div>
             </div>
 
@@ -299,16 +296,15 @@ export default function MarketplacePage({ listings, onStartNegotiation, onAddToC
               </div>
               <input 
                 type="range"
-                min={negotiatingListing.minimumFloorPricePerCrate - 100} // Let them try low, but below floor gets blocked or alerts
-                max={negotiatingListing.targetPricePerCrate}
+                min={Math.round(negotiatingListing.pricePerCrate * 0.5)}
+                max={negotiatingListing.pricePerCrate * 1.5}
                 step={50}
                 value={proposedPrice}
                 onChange={(e) => setProposedPrice(Number(e.target.value))}
                 className="w-full accent-emerald-600 cursor-pointer h-2 bg-neutral-100 rounded-lg appearance-none"
               />
               <div className="flex justify-between text-[10px] text-neutral-400 font-mono">
-                <span>Farmer's Target: Rs.{negotiatingListing.targetPricePerCrate}</span>
-                <span>Minimum Floor: Rs.{negotiatingListing.minimumFloorPricePerCrate}</span>
+                <span>Listed Price: Rs.{negotiatingListing.pricePerCrate}</span>
               </div>
             </div>
 
@@ -346,11 +342,7 @@ export default function MarketplacePage({ listings, onStartNegotiation, onAddToC
             </div>
 
             {/* Price floor check alert warning */}
-            {proposedPrice < negotiatingListing.minimumFloorPricePerCrate && (
-              <div className="bg-amber-50 border border-amber-200 text-amber-800 text-[11px] p-3 rounded-xl leading-relaxed">
-                ⚠️ Your proposed bid is **below** the farmer's target floor limit of **Rs. {negotiatingListing.minimumFloorPricePerCrate}**. They are highly likely to instantly auto-decline or submit a firm counter offer!
-              </div>
-            )}
+
 
             {/* Actions */}
             <div className="flex gap-3">
