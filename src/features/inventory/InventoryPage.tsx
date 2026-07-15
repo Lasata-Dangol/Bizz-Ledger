@@ -117,7 +117,7 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
         <div className="bg-white border border-neutral-100 p-6 rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.01)] space-y-2">
           <span className="text-xs font-bold text-neutral-400 uppercase tracking-widest font-mono">Agreed Payments</span>
           <div className="text-3xl font-black text-amber-500">Rs. 84,500</div>
-          <p className="text-xs text-neutral-500">Bargains agreed, waiting for pickup trucks</p>
+          <p className="text-xs text-neutral-500">Orders agreed, waiting for pickup trucks</p>
         </div>
       </div>
 

@@ -4,13 +4,12 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { UserProfile, VegetableListing, BargainRoom, Order, UserRole, BargainMessage, KalimatiRate } from './types';
+import { UserProfile, VegetableListing, Order, UserRole, KalimatiRate } from './types';
 import { MOCK_USERS, KALIMATI_RATES } from './mockData';
 import { db, isSupabaseConfigured, supabase } from './lib/supabase';
 import KalimatiTicker from './components/KalimatiTicker';
 import DashboardCharts from './components/DashboardCharts';
 import MarketplacePage from './features/marketplace/MarketplacePage';
-import BargainRoomPage from './features/bargain/BargainRoomPage';
 import InventoryPage from './features/inventory/InventoryPage';
 import OrdersPage from './features/orders/OrdersPage';
 import LandingPage from './features/landing/LandingPage';
@@ -57,7 +56,7 @@ export default function App() {
   });
 
   const [listings, setListings] = useState<VegetableListing[]>([]);
-  const [rooms, setRooms] = useState<BargainRoom[]>([]);
+
   const [orders, setOrders] = useState<Order[]>([]);
   const [kalimatiRates, setKalimatiRates] = useState<KalimatiRate[]>([]);
 
@@ -67,17 +66,14 @@ export default function App() {
     return saved ? JSON.parse(saved) : [];
   });
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'marketplace' | 'bargain' | 'inventory' | 'orders' | 'cart' | 'profile'>(() => {
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'marketplace' | 'inventory' | 'orders' | 'cart' | 'profile'>(() => {
     const saved = localStorage.getItem('bl_active_tab');
     return (saved as any) || 'dashboard';
   });
 
   const [viewedProfile, setViewedProfile] = useState<UserProfile | null>(null);
 
-  const [activeRoomId, setActiveRoomId] = useState<string | null>(() => {
-    const saved = localStorage.getItem('bl_active_room_id');
-    return saved || null;
-  });
+
 
   const [showRoleSelector, setShowRoleSelector] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -105,9 +101,7 @@ export default function App() {
             setCurrentUser(profile);
           }
 
-          // Active bargain Rooms sync
-          const fetchedRooms = await db.getBargainRooms(currentUser.id);
-          setRooms(fetchedRooms);
+
 
           // Active orders sync
           const fetchedOrders = await db.getOrders(currentUser.name, currentUser.role);
@@ -190,13 +184,7 @@ export default function App() {
     setIsMobileMenuOpen(false);
   }, [activeTab]);
 
-  useEffect(() => {
-    if (activeRoomId) {
-      localStorage.setItem('bl_active_room_id', activeRoomId);
-    } else {
-      localStorage.removeItem('bl_active_room_id');
-    }
-  }, [activeRoomId]);
+
 
   // --- Handlers & Mutators ---
   const handleAddToCart = (listing: VegetableListing) => {
@@ -302,153 +290,7 @@ export default function App() {
     }
   };
 
-  const handleStartNegotiation = async (listing: VegetableListing, initialOffer: number, quantity: number) => {
-    // Check if room with this listing and this wholesaler already exists
-    const existing = rooms.find(r => r.listingId === listing.id && r.wholesalerId === currentUser.id);
-    if (existing) {
-      setActiveRoomId(existing.roomId);
-      setActiveTab('bargain');
-      return;
-    }
 
-    // Create a new room
-    const newRoomId = `room_${Date.now()}`;
-    const newRoom: BargainRoom = {
-      roomId: newRoomId,
-      listingId: listing.id,
-      cropName: listing.cropName,
-      district: listing.district,
-      farmerId: listing.farmerId,
-      farmerName: listing.farmerName,
-      wholesalerId: currentUser.id,
-      wholesalerName: currentUser.name,
-      status: 'NEGOTIATING',
-      messages: [
-        {
-          messageId: `msg_${Date.now()}`,
-          senderId: currentUser.id,
-          senderName: currentUser.name,
-          senderRole: currentUser.role,
-          type: 'OFFER_SUBMITTED',
-          pricePerCrate: initialOffer,
-          quantityRequested: quantity,
-          text: `Namaskar, we proposed an initial bargaining price of Rs. ${initialOffer} for ${quantity} crates. Let us negotiate terms!`,
-          timestamp: new Date().toISOString(),
-        }
-      ]
-    };
-
-    const createdRoom = await db.createBargainRoom(newRoom);
-    setRooms((prev) => [createdRoom, ...prev]);
-    setActiveRoomId(newRoomId);
-    setActiveTab('bargain');
-  };
-
-  const handleSendMessage = async (roomId: string, messageFields: Omit<BargainMessage, 'messageId' | 'timestamp'>) => {
-    const msgSeed: BargainMessage = {
-      ...messageFields,
-      messageId: `msg_${Date.now()}`,
-      timestamp: new Date().toISOString()
-    };
-
-    await db.addBargainMessage(roomId, msgSeed);
-
-    setRooms((prevRooms) =>
-      prevRooms.map((r) => {
-        if (r.roomId === roomId) {
-          return {
-            ...r,
-            messages: [...r.messages, msgSeed]
-          };
-        }
-        return r;
-      })
-    );
-  };
-
-  const handleAcceptContract = async (roomId: string, finalPrice: number, quantity: number) => {
-    await db.updateRoomStatus(roomId, 'COMPLETED');
-
-    const statusMsg: BargainMessage = {
-      messageId: `msg_contract_${Date.now()}`,
-      senderId: 'admin_sys',
-      senderName: 'BizzLedger Desk',
-      senderRole: 'ADMIN',
-      type: 'ACCEPTED_CONTRACT',
-      pricePerCrate: finalPrice,
-      quantityRequested: quantity,
-      text: `🔒 Transaction Locked Immutable: Agreed settle rate is Rs. ${finalPrice} for ${quantity} crates! Dispatching vehicle manifest.`,
-      timestamp: new Date().toISOString()
-    };
-
-    await db.addBargainMessage(roomId, statusMsg);
-
-    setRooms((prevRooms) =>
-      prevRooms.map((r) => {
-        if (r.roomId === roomId) {
-          return {
-            ...r,
-            status: 'COMPLETED',
-            messages: [...r.messages, statusMsg]
-          };
-        }
-        return r;
-      })
-    );
-
-    // Auto spawn a new order
-    const matchedRoom = rooms.find(r => r.roomId === roomId);
-    if (matchedRoom) {
-      const newOrder: Order = {
-        orderId: `order_2026_${Math.floor(1000 + Math.random() * 9000)}`,
-        roomId,
-        listingId: matchedRoom.listingId,
-        cropName: matchedRoom.cropName,
-        farmerName: matchedRoom.farmerName,
-        wholesalerName: matchedRoom.wholesalerName,
-        finalPricePerCrate: finalPrice,
-        quantity,
-        totalPrice: finalPrice * quantity,
-        status: 'PROCESSING',
-        vehicleNumber: `BA 3 KHA ${Math.floor(1000 + Math.random() * 9000)}`,
-        driverPhone: '+977-98' + Math.floor(10000000 + Math.random() * 90000000).toString(),
-        createdAt: new Date().toISOString(),
-        estimatedArrival: new Date(Date.now() + 8 * 3600 * 1000).toISOString(), // 8 hours later
-      };
-
-      await db.createOrder(newOrder);
-      setOrders((prev) => [newOrder, ...prev]);
-    }
-  };
-
-  const handleWithdrawBargain = async (roomId: string) => {
-    await db.updateRoomStatus(roomId, 'WITHDRAWN');
-
-    const statusMsg: BargainMessage = {
-      messageId: `msg_withdraw_${Date.now()}`,
-      senderId: currentUser.id,
-      senderName: currentUser.name,
-      senderRole: currentUser.role,
-      type: 'WITHDRAWN',
-      text: 'Negotiation was withdrawn by sender.',
-      timestamp: new Date().toISOString()
-    };
-
-    await db.addBargainMessage(roomId, statusMsg);
-
-    setRooms((prevRooms) =>
-      prevRooms.map((r) => {
-        if (r.roomId === roomId) {
-          return {
-            ...r,
-            status: 'WITHDRAWN',
-            messages: [...r.messages, statusMsg]
-          };
-        }
-        return r;
-      })
-    );
-  };
 
   const handleUpdateOrderStatus = async (orderId: string, status: 'PROCESSING' | 'IN_TRANSIT' | 'ARRIVED') => {
     const updated = await db.updateOrderStatus(orderId, status);
@@ -462,7 +304,6 @@ export default function App() {
   const resetLocalStorageSeed = () => {
     localStorage.removeItem('bl_current_user');
     localStorage.removeItem('bl_active_tab');
-    localStorage.removeItem('bl_active_room_id');
     localStorage.removeItem('bl_logged_in');
     localStorage.removeItem('bl_cart');
     window.location.reload();
@@ -470,9 +311,6 @@ export default function App() {
 
   // --- Dynamic Dashboard Views ---
   const renderDashboard = () => {
-    const inboundRooms = rooms.filter(r => r.farmerId === currentUser.id && r.status === 'NEGOTIATING');
-    const outboundRooms = rooms.filter(r => r.wholesalerId === currentUser.id && r.status === 'NEGOTIATING');
-
     const farmerCompletedOrders = orders.filter(o => o.status === 'ARRIVED' || o.status === 'PROCESSING' || o.status === 'IN_TRANSIT');
     const farmerTotalSales = farmerCompletedOrders.reduce((sum, ord) => sum + ord.totalPrice, 0);
     const farmerTotalPayments = farmerCompletedOrders.length;
@@ -1077,7 +915,6 @@ export default function App() {
              {activeTab === 'marketplace' && (
               <MarketplacePage
                 listings={listings}
-                onStartNegotiation={handleStartNegotiation}
                 onAddToCart={handleAddToCart}
                 currentUser={currentUser}
                 onViewFarmer={async (farmerId) => {
@@ -1091,18 +928,6 @@ export default function App() {
                     console.error('Failed to load farmer profile', e);
                   }
                 }}
-              />
-            )}
-            {activeTab === 'bargain' && (
-              <BargainRoomPage
-                rooms={rooms}
-                listings={listings}
-                currentUser={currentUser}
-                activeRoomId={activeRoomId}
-                onSelectRoom={setActiveRoomId}
-                onSubmitMessage={handleSendMessage}
-                onAcceptContract={handleAcceptContract}
-                onWithdrawBargain={handleWithdrawBargain}
               />
             )}
             {activeTab === 'inventory' && (

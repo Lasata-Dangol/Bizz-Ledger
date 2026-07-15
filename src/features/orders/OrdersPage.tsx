@@ -254,7 +254,7 @@ export default function OrdersPage({ orders, currentUser, onUpdateOrderStatus }:
             </>
           ) : (
             <div className="bg-neutral-50 border border-neutral-200 rounded-3xl p-12 text-center text-neutral-400">
-              No delivery bills found yet. Complete a bargain to create orders!
+              No delivery bills found yet. Complete a checkout from your shopping cart to create orders!
             </div>
           )}
         </div>

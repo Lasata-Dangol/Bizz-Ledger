@@ -3,7 +3,7 @@
  * Initial seeded database rates, listings, users, and conversations.
  */
 
-import { UserProfile, VegetableListing, BargainRoom, Order, KalimatiRate } from './types';
+import { UserProfile, VegetableListing, Order, KalimatiRate } from './types';
 
 // Standard Users
 export const MOCK_USERS: UserProfile[] = [
@@ -88,7 +88,5 @@ export const KALIMATI_RATES: KalimatiRate[] = [
 ];
 
 export const INITIAL_LISTINGS: VegetableListing[] = [];
-
-export const INITIAL_ROOMS: BargainRoom[] = [];
 
 export const INITIAL_ORDERS: Order[] = [];
