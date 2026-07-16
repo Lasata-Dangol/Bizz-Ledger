@@ -17,6 +17,8 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
   const [isOtherCrop, setIsOtherCrop] = useState(false);
   const [category, setCategory] = useState<'Tomatoes' | 'Cabbages' | 'Greens' | 'Potatoes' | 'Squash' | 'Other'>('Tomatoes');
   const [district, setDistrict] = useState('Panchkhal, Kavre');
+  const [districtCustom, setDistrictCustom] = useState('');
+  const [isOtherDistrict, setIsOtherDistrict] = useState(false);
   const [crates, setCrates] = useState(60);
   const [priceVal, setPriceVal] = useState(1400);
   const [readyShip, setReadyShip] = useState(true);
@@ -33,6 +35,9 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
     setCropNameCustom('');
     setIsOtherCrop(false);
     setCategory('Tomatoes');
+    setDistrict('Panchkhal, Kavre');
+    setDistrictCustom('');
+    setIsOtherDistrict(false);
     setCrates(60);
     setPriceVal(1400);
     setReadyShip(true);
@@ -54,7 +59,16 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
       setCropNameCustom(listing.cropName);
     }
     setCategory(listing.category as any);
-    setDistrict(listing.district);
+    const knownDistricts = ['Panchkhal, Kavre', 'Benighat, Dhading', 'Palung, Makwanpur'];
+    if (knownDistricts.includes(listing.district)) {
+      setDistrict(listing.district);
+      setIsOtherDistrict(false);
+      setDistrictCustom('');
+    } else {
+      setDistrict('Other');
+      setIsOtherDistrict(true);
+      setDistrictCustom(listing.district);
+    }
     setCrates(listing.quantityAvailableCrates);
     setPriceVal(listing.pricePerCrate);
     setReadyShip(listing.readyToShip);
@@ -69,7 +83,7 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
     const listingData = {
       cropName: finalCropName,
       category,
-      district,
+      district: isOtherDistrict ? districtCustom.trim() : district,
       quantityAvailableCrates: crates,
       pricePerCrate: priceVal,
       harvestDate: new Date().toISOString().split('T')[0],
@@ -89,6 +103,8 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
     setEditingId(null);
     setIsOtherCrop(false);
     setCropNameCustom('');
+    setIsOtherDistrict(false);
+    setDistrictCustom('');
   };
 
   const imageOptions = [
@@ -285,18 +301,41 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* District location setup */}
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 flex-1">
                   <label className="text-xs font-bold text-neutral-600 block">Farming District</label>
                   <select 
-                    value={district}
-                    onChange={(e) => setDistrict(e.target.value)}
+                    value={isOtherDistrict ? 'Other' : district}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === 'Other') {
+                        setIsOtherDistrict(true);
+                        setDistrict('Other');
+                      } else {
+                        setIsOtherDistrict(false);
+                        setDistrict(val);
+                      }
+                    }}
                     className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-semibold focus:outline-hidden"
                   >
                     <option>Panchkhal, Kavre</option>
                     <option>Benighat, Dhading</option>
                     <option>Palung, Makwanpur</option>
+                    <option>Other</option>
                   </select>
                 </div>
+                {isOtherDistrict && (
+                  <div className="space-y-1.5 flex-1">
+                    <label className="text-xs font-bold text-neutral-600 block">Custom District Name</label>
+                    <input 
+                      type="text" 
+                      value={districtCustom}
+                      onChange={(e) => setDistrictCustom(e.target.value)}
+                      placeholder="Enter district name"
+                      className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-semibold focus:outline-hidden"
+                      required
+                    />
+                  </div>
+                )}
 
                 {/* Available volume select */}
                 <div className="space-y-1.5">
