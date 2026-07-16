@@ -13,13 +13,15 @@ interface InventoryPageProps {
 export default function InventoryPage({ listings, onAddListing, onEditListing, onDeleteListing, currentUser }: InventoryPageProps) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [cropName, setCropName] = useState('Tomato (Local)');
+  const [cropNameCustom, setCropNameCustom] = useState('');
+  const [isOtherCrop, setIsOtherCrop] = useState(false);
   const [category, setCategory] = useState<'Tomatoes' | 'Cabbages' | 'Greens' | 'Potatoes' | 'Squash' | 'Other'>('Tomatoes');
   const [district, setDistrict] = useState('Panchkhal, Kavre');
   const [crates, setCrates] = useState(60);
   const [priceVal, setPriceVal] = useState(1400);
   const [readyShip, setReadyShip] = useState(true);
   const [notes, setNotes] = useState('');
-  const [imageUrl, setImageUrl] = useState('https://images.unsplash.com/photo-1595855759920-86582396756a?w=400&auto=format&fit=crop&q=80');
+  const [imageUrl, setImageUrl] = useState('https://images.unsplash.com/photo-1546094096-0df4bcaaa337?w=400&auto=format&fit=crop&q=80');
   const [editingId, setEditingId] = useState<string | null>(null);
 
   // Filter listings belonging to current logged-in farmer
@@ -28,17 +30,29 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
   const handleOpenAddModal = () => {
     setEditingId(null);
     setCropName('Tomato (Local)');
+    setCropNameCustom('');
+    setIsOtherCrop(false);
     setCategory('Tomatoes');
     setCrates(60);
     setPriceVal(1400);
     setReadyShip(true);
     setNotes('');
+    setImageUrl('https://images.unsplash.com/photo-1546094096-0df4bcaaa337?w=400&auto=format&fit=crop&q=80');
     setShowAddModal(true);
   };
 
   const handleOpenEditModal = (listing: VegetableListing) => {
     setEditingId(listing.id);
-    setCropName(listing.cropName);
+    const knownCrops = ['Tomato (Local)', 'Potato', 'Cabbage', 'Cauliflower (Local)'];
+    if (knownCrops.includes(listing.cropName)) {
+      setCropName(listing.cropName);
+      setIsOtherCrop(false);
+      setCropNameCustom('');
+    } else {
+      setCropName('Other');
+      setIsOtherCrop(true);
+      setCropNameCustom(listing.cropName);
+    }
     setCategory(listing.category as any);
     setDistrict(listing.district);
     setCrates(listing.quantityAvailableCrates);
@@ -51,8 +65,9 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const finalCropName = isOtherCrop ? cropNameCustom.trim() : cropName;
     const listingData = {
-      cropName,
+      cropName: finalCropName,
       category,
       district,
       quantityAvailableCrates: crates,
@@ -72,12 +87,14 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
     setShowAddModal(false);
     setNotes('');
     setEditingId(null);
+    setIsOtherCrop(false);
+    setCropNameCustom('');
   };
 
   const imageOptions = [
-    { label: 'Red Tomatoes', value: 'https://images.unsplash.com/photo-1595855759920-86582396756a?w=400&auto=format&fit=crop&q=80' },
-    { label: 'Red Potatoes', value: 'https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=400&auto=format&fit=crop&q=80' },
-    { label: 'Crispy Cabbage', value: 'https://images.unsplash.com/photo-1550142414-ac6200fa53f4?w=400&auto=format&fit=crop&q=80' },
+    { label: 'Tomatoes', value: 'https://images.unsplash.com/photo-1546094096-0df4bcaaa337?w=400&auto=format&fit=crop&q=80' },
+    { label: 'Potatoes', value: 'https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=400&auto=format&fit=crop&q=80' },
+    { label: 'Cabbage', value: 'https://images.unsplash.com/photo-1594282486552-05b4d80fbb9f?w=400&auto=format&fit=crop&q=80' },
     { label: 'Local Cauliflower', value: 'https://images.unsplash.com/photo-1568584711075-3d021a7c3ca3?w=400&auto=format&fit=crop&q=80' },
   ];
 
