@@ -43,7 +43,7 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
 
   const handleOpenEditModal = (listing: VegetableListing) => {
     setEditingId(listing.id);
-    const knownCrops = ['Tomato (Local)', 'Potato', 'Cabbage', 'Cauliflower (Local)'];
+    const knownCrops = ['Tomato (Local)', 'Potatoes', 'Cabbage', 'Cauliflower (Local)'];
     if (knownCrops.includes(listing.cropName)) {
       setCropName(listing.cropName);
       setIsOtherCrop(false);
@@ -234,31 +234,54 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-neutral-600 block">Vegetable Crop Name</label>
                 <select 
-                  value={cropName}
+                  value={isOtherCrop ? 'Other' : cropName}
                   onChange={(e) => {
-                    setCropName(e.target.value);
-                    if (e.target.value === 'Potato (Red)') {
-                      setCategory('Potatoes');
-                      setImageUrl('https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=400&auto=format&fit=crop&q=80');
-                    } else if (e.target.value === 'Cabbage') {
-                      setCategory('Cabbages');
-                      setImageUrl('https://images.unsplash.com/photo-1550142414-ac6200fa53f4?w=400&auto=format&fit=crop&q=80');
-                    } else if (e.target.value === 'Cauliflower (Local)') {
-                      setCategory('Cabbages');
-                      setImageUrl('https://images.unsplash.com/photo-1568584711075-3d021a7c3ca3?w=400&auto=format&fit=crop&q=80');
+                    const val = e.target.value;
+                    if (val === 'Other') {
+                      setIsOtherCrop(true);
+                      setCropName('Other');
+                      setCategory('Other');
                     } else {
-                      setCategory('Tomatoes');
-                      setImageUrl('https://images.unsplash.com/photo-1595855759920-86582396756a?w=400&auto=format&fit=crop&q=80');
+                      setIsOtherCrop(false);
+                      setCropName(val);
+                      if (val === 'Potatoes') {
+                        setCategory('Potatoes');
+                        setImageUrl('https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=400&auto=format&fit=crop&q=80');
+                      } else if (val === 'Cabbage') {
+                        setCategory('Cabbages');
+                        setImageUrl('https://images.unsplash.com/photo-1550142414-ac6200fa53f4?w=400&auto=format&fit=crop&q=80');
+                      } else if (val === 'Cauliflower (Local)') {
+                        setCategory('Cabbages');
+                        setImageUrl('https://images.unsplash.com/photo-1568584711075-3d021a7c3ca3?w=400&auto=format&fit=crop&q=80');
+                      } else {
+                        setCategory('Tomatoes');
+                        setImageUrl('https://images.unsplash.com/photo-1595855759920-86582396756a?w=400&auto=format&fit=crop&q=80');
+                      }
                     }
                   }}
                   className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-semibold focus:outline-hidden"
                 >
                   <option>Tomato (Local)</option>
-                  <option>Potato (Red)</option>
+                  <option>Potatoes</option>
                   <option>Cabbage</option>
                   <option>Cauliflower (Local)</option>
+                  <option>Other</option>
                 </select>
               </div>
+
+              {isOtherCrop && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-neutral-600 block">Custom Crop Name</label>
+                  <input 
+                    type="text" 
+                    value={cropNameCustom}
+                    onChange={(e) => setCropNameCustom(e.target.value)}
+                    placeholder="Enter crop name"
+                    className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-semibold focus:outline-hidden"
+                    required
+                  />
+                </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* District location setup */}
