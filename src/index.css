@@ -25,22 +25,35 @@
   background: rgba(0, 0, 0, 0.16);
 }
 
+/* Marquee animation: smoothly scrolls duplicated content from its starting position
+   to halfway left (-50%) so the second copy seamlessly continues, creating an
+   infinite horizontal scrolling effect. */
 @keyframes marquee {
   0% {
     transform: translateX(0%);
+    /* Start at the original position */
   }
 
   100% {
     transform: translateX(-50%);
+    /* Move content left by half its width */
   }
 }
 
 .animate-marquee {
-  display: flex;
   width: max-content;
+  /* Prevents the container from stretching to 100% width; keeps it the exact width of its contents */
   animation: marquee 500s linear infinite;
+  /* 
+      marquee   → Name of the @keyframes animation
+      500s      → One full scroll takes 500 seconds
+      linear    → Moves at a constant speed (no acceleration/deceleration)
+      infinite  → Repeats forever
+  */
+
 }
 
+/* Improve usability by letting users pause the ticker to read its contents */
 .animate-marquee:hover {
   animation-play-state: paused;
 }
