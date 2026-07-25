@@ -25,6 +25,34 @@ class DirectLedgerDb {
     return `bizzledger_db_${name}`;
   }
 
+  constructor() {
+    // One-time migration: evict stale old-format listings that contain
+    // fields from a previous version of the app (e.g. bargainPrice, bargainRoom,
+    // offerPrice). These cause "bargain rooms/prices" to reappear on crop cards.
+    try {
+      const raw = localStorage.getItem(this.localKey('listings'));
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const hasLegacyFields = parsed.some(
+            (item: any) =>
+              'bargainPrice' in item ||
+              'bargainRoom' in item ||
+              'offerPrice' in item ||
+              'negotiationRoom' in item
+          );
+          if (hasLegacyFields) {
+            console.info('[BizzLedger] Detected old-format listings cache — clearing for migration.');
+            localStorage.removeItem(this.localKey('listings'));
+          }
+        }
+      }
+    } catch {
+      // If parsing fails, also wipe it to be safe
+      localStorage.removeItem(this.localKey('listings'));
+    }
+  }
+
   // Get current active authenticated user structure
   async getProfile(userId: string): Promise<UserProfile | null> {
     if (supabase) {
