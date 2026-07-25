@@ -7,21 +7,37 @@ interface MarketplacePageProps {
   onAddToCart?: (listing: VegetableListing) => void;
   currentUser: UserProfile;
   onViewFarmer?: (farmerId: string) => void;
+  initialSearchTerm?: string;
 }
 
-export default function MarketplacePage({ listings, onAddToCart, currentUser, onViewFarmer }: MarketplacePageProps) {
-  const [searchTerm, setSearchTerm] = useState('');
+export default function MarketplacePage({ listings, onAddToCart, currentUser, onViewFarmer, initialSearchTerm }: MarketplacePageProps) {
+  const [searchInput, setSearchInput] = useState(initialSearchTerm || '');
+  const [searchTerm, setSearchTerm] = useState(initialSearchTerm || '');
   const [selectedDistrict, setSelectedDistrict] = useState('All');
   const [selectedCategory, setSelectedCategory] = useState('All');
+
+  React.useEffect(() => {
+    if (initialSearchTerm !== undefined) {
+      setSearchInput(initialSearchTerm);
+      setSearchTerm(initialSearchTerm);
+    }
+  }, [initialSearchTerm]);
 
   // Extract unique districts and categories
   const districts = ['All', 'Panchkhal, Kavre', 'Benighat, Dhading', 'Palung, Makwanpur'];
   const categories = ['All', 'Tomatoes', 'Cabbages', 'Greens', 'Potatoes', 'Squash', 'Other'];
 
+  const normalizeMatch = (query: string, text: string) => {
+    if (!query.trim()) return true;
+    const nq = query.toLowerCase().trim().replace(/es$/, '').replace(/s$/, '');
+    const nt = text.toLowerCase().trim().replace(/es$/, '').replace(/s$/, '');
+    return nt.includes(nq) || nq.includes(nt);
+  };
+
   // Filter listings
   const filteredListings = listings.filter((item) => {
-    const matchesSearch = item.cropName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          item.farmerName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = normalizeMatch(searchTerm, item.cropName) || 
+                          normalizeMatch(searchTerm, item.farmerName);
     const matchesDistrict = selectedDistrict === 'All' || item.district === selectedDistrict;
     const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
     return matchesSearch && matchesDistrict && matchesCategory;
@@ -55,15 +71,61 @@ export default function MarketplacePage({ listings, onAddToCart, currentUser, on
       <div className="bg-white border border-neutral-100 rounded-3xl p-5 shadow-[0_4px_20px_rgba(0,0,0,0.02)] space-y-4">
         <div className="flex flex-col md:flex-row gap-4">
           {/* Main search input */}
-          <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-neutral-400 group-focus-within:text-emerald-500 transition duration-200" size={18} />
+          <div className="relative flex-1 z-50">
+            <Search 
+              className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-neutral-400 group-focus-within:text-emerald-500 transition duration-200 cursor-pointer" 
+              size={18} 
+              onClick={() => setSearchTerm(searchInput)}
+            />
             <input 
               type="text"
               placeholder="Search vegetables or farmers (e.g. Tomato, Pema Shrestha)..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setSearchTerm(searchInput);
+                }
+              }}
               className="w-full pl-11 pr-4 py-3 bg-neutral-50/80 border border-neutral-200 rounded-2xl text-sm font-medium focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition duration-200"
             />
+            
+            {searchInput.trim().length > 0 && searchInput !== searchTerm && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-neutral-150 rounded-2xl shadow-lg z-50 max-h-80 overflow-y-auto">
+                {(() => {
+                  const filteredSearchListings = listings.filter(l => 
+                    normalizeMatch(searchInput, l.cropName) || 
+                    normalizeMatch(searchInput, l.farmerName) ||
+                    normalizeMatch(searchInput, l.district)
+                  );
+                  return filteredSearchListings.length > 0 ? (
+                    filteredSearchListings.map(listing => (
+                      <div 
+                        key={listing.id} 
+                        className="p-3 hover:bg-neutral-50 border-b border-neutral-100 last:border-0 cursor-pointer flex items-center justify-between transition-colors duration-150"
+                        onClick={() => {
+                          setSearchInput(listing.cropName);
+                          setSearchTerm(listing.cropName);
+                        }}
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-bold text-sm text-neutral-800">{listing.cropName}</span>
+                          <span className="text-xs text-neutral-500">{listing.farmerName} • {listing.district}</span>
+                        </div>
+                        <div className="flex flex-col items-end">
+                          <span className="font-bold text-emerald-600">Rs. {listing.pricePerKg}/kg</span>
+                          <span className="text-xs text-neutral-500">{listing.volumeKg} kg</span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-4 text-center text-sm text-neutral-500 font-medium">
+                      No results found for "{searchInput}"
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
           </div>
 
           {/* District selector */}

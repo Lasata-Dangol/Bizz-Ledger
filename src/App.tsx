@@ -80,6 +80,7 @@ export default function App() {
 
   const [showRoleSelector, setShowRoleSelector] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [submittedSearchQuery, setSubmittedSearchQuery] = useState('');
   const [showNotificationCount, setShowNotificationCount] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -1032,15 +1033,79 @@ export default function App() {
 
           {/* Top Bar Header Area */}
           <header className="bg-white border border-neutral-100 rounded-3xl p-4 shadow-[0_4px_20px_rgba(0,0,0,0.015)] flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div className="relative flex-1 w-full max-w-md">
-              <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-neutral-400" size={16} />
+            <div className="relative flex-1 w-full max-w-md z-50">
+              <Search 
+                className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-neutral-400 cursor-pointer hover:text-emerald-500 transition-colors" 
+                size={16} 
+                onClick={() => {
+                  if (searchQuery.trim().length > 0) {
+                    setSubmittedSearchQuery(searchQuery);
+                    setActiveTab('marketplace');
+                  }
+                }}
+              />
               <input
                 type="text"
                 placeholder="Search vegetables, fruits, or districts..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && searchQuery.trim().length > 0) {
+                    setSubmittedSearchQuery(searchQuery);
+                    setActiveTab('marketplace');
+                  }
+                }}
                 className="w-full pl-10 pr-4 py-2.5 bg-neutral-50/80 border border-neutral-150 rounded-2xl text-xs font-bold leading-none "
               />
+              
+              {searchQuery.trim().length > 0 && (
+                (() => {
+                  const normalizeMatch = (query: string, text: string) => {
+                    if (!query.trim()) return true;
+                    const nq = query.toLowerCase().trim().replace(/es$/, '').replace(/s$/, '');
+                    const nt = text.toLowerCase().trim().replace(/es$/, '').replace(/s$/, '');
+                    return nt.includes(nq) || nq.includes(nt);
+                  };
+
+                  const filteredSearchListings = listings.filter(l => 
+                    normalizeMatch(searchQuery, l.cropName) || 
+                    normalizeMatch(searchQuery, l.category) ||
+                    normalizeMatch(searchQuery, l.district) ||
+                    normalizeMatch(searchQuery, l.farmerName)
+                  );
+
+                  return (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-neutral-150 rounded-2xl shadow-lg z-50 max-h-80 overflow-y-auto">
+                      {filteredSearchListings.length > 0 ? (
+                        filteredSearchListings.map(listing => (
+                          <div 
+                            key={listing.id} 
+                            className="p-3 hover:bg-neutral-50 border-b border-neutral-100 last:border-0 cursor-pointer flex items-center justify-between transition-colors duration-150"
+                            onClick={() => {
+                              setSearchQuery(listing.cropName);
+                              setSubmittedSearchQuery(listing.cropName);
+                              setActiveTab('marketplace');
+                            }}
+                          >
+                            <div className="flex flex-col">
+                              <span className="font-bold text-sm text-neutral-800">{listing.cropName}</span>
+                              <span className="text-xs text-neutral-500">{listing.farmerName} • {listing.district}</span>
+                            </div>
+                            <div className="flex flex-col items-end">
+                              <span className="font-bold text-emerald-600">Rs. {listing.pricePerKg}/kg</span>
+                              <span className="text-xs text-neutral-500">{listing.volumeKg} kg</span>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-4 text-center text-sm text-neutral-500 font-medium">
+                          No results found for "{searchQuery}"
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()
+              )}
             </div>
 
             <div className="flex items-center gap-3">
@@ -1150,6 +1215,7 @@ export default function App() {
                 listings={listings}
                 onAddToCart={handleAddToCart}
                 currentUser={currentUser}
+                initialSearchTerm={submittedSearchQuery}
                 onViewFarmer={async (farmerId) => {
                   try {
                     const profile = await db.getProfile(farmerId);

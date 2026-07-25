@@ -47,6 +47,38 @@ export default function CartPage({
   const [paymentMethod, setPaymentMethod] = useState<'Esewa' | 'QR'>('Esewa');
   const [isCompleted, setIsCompleted] = useState(false);
   const [createdOrders, setCreatedOrders] = useState<Order[]>([]);
+  const [qtyErrors, setQtyErrors] = useState<Record<string, string>>({});
+  // Local display string for each cart item's input — allows free typing
+  const [inputValues, setInputValues] = useState<Record<string, string>>({});
+
+  // Commit typed value to cart on blur or Enter
+  const commitQty = (listingId: string, maxAvailable: number) => {
+    const raw = inputValues[listingId];
+    // Helper to clear local value so input re-syncs to parent's item.quantity
+    const clearLocal = () => setInputValues(prev => { const next = { ...prev }; delete next[listingId]; return next; });
+
+    if (raw === undefined || raw === '') {
+      onUpdateCartItemQuantity(listingId, 1);
+      setQtyErrors(prev => { const next = { ...prev }; delete next[listingId]; return next; });
+      clearLocal();
+      return;
+    }
+    const num = parseInt(raw, 10);
+    if (isNaN(num) || num < 1) {
+      onUpdateCartItemQuantity(listingId, 1);
+      setQtyErrors(prev => { const next = { ...prev }; delete next[listingId]; return next; });
+      clearLocal();
+      return;
+    }
+    if (num > maxAvailable) {
+      setQtyErrors(prev => ({ ...prev, [listingId]: `Only ${maxAvailable} available` }));
+      onUpdateCartItemQuantity(listingId, maxAvailable);
+    } else {
+      setQtyErrors(prev => { const next = { ...prev }; delete next[listingId]; return next; });
+      onUpdateCartItemQuantity(listingId, num);
+    }
+    clearLocal();
+  };
 
   // Calculate logistics rates per crate based on district origin
   const getLogisticsRatePerCrate = (district: string): number => {
@@ -261,22 +293,70 @@ export default function CartPage({
 
                   {/* Quantity slider & prices */}
                   <div className="flex items-center gap-6 justify-between w-full sm:w-auto border-t sm:border-0 pt-3 sm:pt-0">
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => onUpdateCartItemQuantity(item.listing.id, Math.max(1, item.quantity - 5))}
-                        className="w-7 h-7 bg-neutral-100 hover:bg-neutral-250 text-neutral-800 font-bold rounded-lg text-xs cursor-pointer flex items-center justify-center leading-none"
-                      >
-                        -
-                      </button>
-                      <span className="w-14 text-center font-extrabold text-neutral-800 text-xs">
-                        {item.quantity} Cr.
-                      </span>
-                      <button
-                        onClick={() => onUpdateCartItemQuantity(item.listing.id, Math.min(item.listing.quantityAvailableCrates, item.quantity + 5))}
-                        className="w-7 h-7 bg-neutral-100 hover:bg-neutral-250 text-neutral-800 font-bold rounded-lg text-xs cursor-pointer flex items-center justify-center leading-none"
-                      >
-                        +
-                      </button>
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => {
+                            const newQty = Math.max(1, item.quantity - 1);
+                            onUpdateCartItemQuantity(item.listing.id, newQty);
+                            setInputValues(prev => { const next = { ...prev }; delete next[item.listing.id]; return next; });
+                            setQtyErrors(prev => { const next = {...prev}; delete next[item.listing.id]; return next; });
+                          }}
+                          className="w-7 h-7 bg-neutral-100 hover:bg-neutral-250 text-neutral-800 font-bold rounded-lg text-xs cursor-pointer flex items-center justify-center leading-none"
+                        >
+                          -
+                        </button>
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={inputValues[item.listing.id] !== undefined ? inputValues[item.listing.id] : String(item.quantity)}
+                            onFocus={() => setInputValues(prev => ({ ...prev, [item.listing.id]: String(item.quantity) }))}
+                            onChange={(e) => {
+                              // Only allow digits
+                              const val = e.target.value.replace(/[^0-9]/g, '');
+                              setInputValues(prev => ({ ...prev, [item.listing.id]: val }));
+                              // Live error check
+                              if (val !== '') {
+                                const num = parseInt(val, 10);
+                                if (num > item.listing.quantityAvailableCrates) {
+                                  setQtyErrors(prev => ({ ...prev, [item.listing.id]: `Only ${item.listing.quantityAvailableCrates} available` }));
+                                } else {
+                                  setQtyErrors(prev => { const next = { ...prev }; delete next[item.listing.id]; return next; });
+                                }
+                              }
+                            }}
+                            onBlur={() => commitQty(item.listing.id, item.listing.quantityAvailableCrates)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                commitQty(item.listing.id, item.listing.quantityAvailableCrates);
+                                (e.target as HTMLInputElement).blur();
+                              }
+                            }}
+                            className="w-12 text-center font-extrabold text-neutral-800 text-xs border border-neutral-200 rounded p-1 hide-arrows focus:outline-none focus:border-emerald-400"
+                          />
+                          <span className="text-xs text-neutral-500 font-bold">Cr.</span>
+                        </div>
+                        <button
+                          onClick={() => {
+                            const newQty = item.quantity + 1;
+                            if (newQty > item.listing.quantityAvailableCrates) {
+                              setQtyErrors(prev => ({ ...prev, [item.listing.id]: `Only ${item.listing.quantityAvailableCrates} available` }));
+                              onUpdateCartItemQuantity(item.listing.id, item.listing.quantityAvailableCrates);
+                            } else {
+                              onUpdateCartItemQuantity(item.listing.id, newQty);
+                              setQtyErrors(prev => { const next = {...prev}; delete next[item.listing.id]; return next; });
+                            }
+                            setInputValues(prev => { const next = { ...prev }; delete next[item.listing.id]; return next; });
+                          }}
+                          className="w-7 h-7 bg-neutral-100 hover:bg-neutral-250 text-neutral-800 font-bold rounded-lg text-xs cursor-pointer flex items-center justify-center leading-none"
+                        >
+                          +
+                        </button>
+                      </div>
+                      {qtyErrors[item.listing.id] && (
+                        <span className="text-[9px] text-red-500 font-bold">{qtyErrors[item.listing.id]}</span>
+                      )}
                     </div>
 
                     <div className="text-right">

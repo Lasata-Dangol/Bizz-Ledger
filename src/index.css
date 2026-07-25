@@ -57,3 +57,13 @@
 .animate-marquee:hover {
   animation-play-state: paused;
 }
+
+/* Hide number input spinners (arrows) for cart quantity fields */
+.hide-arrows::-webkit-outer-spin-button,
+.hide-arrows::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.hide-arrows[type=number] {
+  -moz-appearance: textfield;
+}
