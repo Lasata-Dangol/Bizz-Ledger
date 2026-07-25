@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { UserProfile, VegetableListing, Order, UserRole, KalimatiRate } from './types';
+import { UserProfile, VegetableListing, BargainRoom, Order, UserRole, BargainMessage, KalimatiRate } from './types';
 import { MOCK_USERS, KALIMATI_RATES } from './mockData';
 import { db, isSupabaseConfigured, supabase } from './lib/supabase';
 import KalimatiTicker from './components/KalimatiTicker';
@@ -73,7 +73,10 @@ export default function App() {
 
   const [viewedProfile, setViewedProfile] = useState<UserProfile | null>(null);
 
-
+  const [activeRoomId, setActiveRoomId] = useState<string | null>(() => {
+    const saved = localStorage.getItem('bl_active_room_id');
+    return saved || null;
+  });
 
   const [showRoleSelector, setShowRoleSelector] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -106,6 +109,10 @@ export default function App() {
           // Active orders sync
           const fetchedOrders = await db.getOrders(currentUser.name, currentUser.role);
           setOrders(fetchedOrders);
+
+          // Fetch notifications
+          const fetchedNotifs = await db.getNotifications(currentUser.id);
+          setNotifications(fetchedNotifs);
         } catch (err) {
           console.error('Failed to load personalized data from DB:', err);
         }
@@ -255,9 +262,28 @@ export default function App() {
 
     for (const ord of newCreatedOrders) {
       await db.createOrder(ord);
+
+      const matchedItem = checkoutItems.find(item => item.listing.id === ord.listingId);
+      if (matchedItem) {
+        const notif: AppNotification = {
+          id: `notif_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`,
+          userId: matchedItem.listing.farmerId,
+          title: 'New Order Received',
+          message: `${ord.wholesalerName} placed a new order for ${ord.quantity} crates of ${ord.cropName} at Rs. ${ord.finalPricePerCrate} per crate. Status: ${ord.status}.`,
+          orderId: ord.orderId,
+          isRead: false,
+          createdAt: new Date().toISOString()
+        };
+        await db.createNotification(notif);
+      }
     }
 
     setOrders((prev) => [...newCreatedOrders, ...prev]);
+
+    if (currentUser) {
+      const fetchedNotifs = await db.getNotifications(currentUser.id);
+      setNotifications(fetchedNotifs);
+    }
   };
 
   const handleAddNewListing = async (newListing: Omit<VegetableListing, 'id' | 'farmerId' | 'farmerName' | 'farmerRating'>) => {
@@ -290,7 +316,153 @@ export default function App() {
     }
   };
 
+  const handleStartNegotiation = async (listing: VegetableListing, initialOffer: number, quantity: number) => {
+    // Check if room with this listing and this wholesaler already exists
+    const existing = rooms.find(r => r.listingId === listing.id && r.wholesalerId === currentUser.id);
+    if (existing) {
+      setActiveRoomId(existing.roomId);
+      setActiveTab('bargain');
+      return;
+    }
 
+    // Create a new room
+    const newRoomId = `room_${Date.now()}`;
+    const newRoom: BargainRoom = {
+      roomId: newRoomId,
+      listingId: listing.id,
+      cropName: listing.cropName,
+      district: listing.district,
+      farmerId: listing.farmerId,
+      farmerName: listing.farmerName,
+      wholesalerId: currentUser.id,
+      wholesalerName: currentUser.name,
+      status: 'NEGOTIATING',
+      messages: [
+        {
+          messageId: `msg_${Date.now()}`,
+          senderId: currentUser.id,
+          senderName: currentUser.name,
+          senderRole: currentUser.role,
+          type: 'OFFER_SUBMITTED',
+          pricePerCrate: initialOffer,
+          quantityRequested: quantity,
+          text: `Namaskar, we proposed an initial bargaining price of Rs. ${initialOffer} for ${quantity} crates. Let us negotiate terms!`,
+          timestamp: new Date().toISOString(),
+        }
+      ]
+    };
+
+    const createdRoom = await db.createBargainRoom(newRoom);
+    setRooms((prev) => [createdRoom, ...prev]);
+    setActiveRoomId(newRoomId);
+    setActiveTab('bargain');
+  };
+
+  const handleSendMessage = async (roomId: string, messageFields: Omit<BargainMessage, 'messageId' | 'timestamp'>) => {
+    const msgSeed: BargainMessage = {
+      ...messageFields,
+      messageId: `msg_${Date.now()}`,
+      timestamp: new Date().toISOString()
+    };
+
+    await db.addBargainMessage(roomId, msgSeed);
+
+    setRooms((prevRooms) =>
+      prevRooms.map((r) => {
+        if (r.roomId === roomId) {
+          return {
+            ...r,
+            messages: [...r.messages, msgSeed]
+          };
+        }
+        return r;
+      })
+    );
+  };
+
+  const handleAcceptContract = async (roomId: string, finalPrice: number, quantity: number) => {
+    await db.updateRoomStatus(roomId, 'COMPLETED');
+
+    const statusMsg: BargainMessage = {
+      messageId: `msg_contract_${Date.now()}`,
+      senderId: 'admin_sys',
+      senderName: 'BizzLedger Desk',
+      senderRole: 'ADMIN',
+      type: 'ACCEPTED_CONTRACT',
+      pricePerCrate: finalPrice,
+      quantityRequested: quantity,
+      text: `🔒 Transaction Locked Immutable: Agreed settle rate is Rs. ${finalPrice} for ${quantity} crates! Dispatching vehicle manifest.`,
+      timestamp: new Date().toISOString()
+    };
+
+    await db.addBargainMessage(roomId, statusMsg);
+
+    setRooms((prevRooms) =>
+      prevRooms.map((r) => {
+        if (r.roomId === roomId) {
+          return {
+            ...r,
+            status: 'COMPLETED',
+            messages: [...r.messages, statusMsg]
+          };
+        }
+        return r;
+      })
+    );
+
+    // Auto spawn a new order
+    const matchedRoom = rooms.find(r => r.roomId === roomId);
+    if (matchedRoom) {
+      const newOrder: Order = {
+        orderId: `order_2026_${Math.floor(1000 + Math.random() * 9000)}`,
+        roomId,
+        listingId: matchedRoom.listingId,
+        cropName: matchedRoom.cropName,
+        farmerName: matchedRoom.farmerName,
+        wholesalerName: matchedRoom.wholesalerName,
+        finalPricePerCrate: finalPrice,
+        quantity,
+        totalPrice: finalPrice * quantity,
+        status: 'PROCESSING',
+        vehicleNumber: `BA 3 KHA ${Math.floor(1000 + Math.random() * 9000)}`,
+        driverPhone: '+977-98' + Math.floor(10000000 + Math.random() * 90000000).toString(),
+        createdAt: new Date().toISOString(),
+        estimatedArrival: new Date(Date.now() + 8 * 3600 * 1000).toISOString(), // 8 hours later
+      };
+
+      await db.createOrder(newOrder);
+      setOrders((prev) => [newOrder, ...prev]);
+    }
+  };
+
+  const handleWithdrawBargain = async (roomId: string) => {
+    await db.updateRoomStatus(roomId, 'WITHDRAWN');
+
+    const statusMsg: BargainMessage = {
+      messageId: `msg_withdraw_${Date.now()}`,
+      senderId: currentUser.id,
+      senderName: currentUser.name,
+      senderRole: currentUser.role,
+      type: 'WITHDRAWN',
+      text: 'Negotiation was withdrawn by sender.',
+      timestamp: new Date().toISOString()
+    };
+
+    await db.addBargainMessage(roomId, statusMsg);
+
+    setRooms((prevRooms) =>
+      prevRooms.map((r) => {
+        if (r.roomId === roomId) {
+          return {
+            ...r,
+            status: 'WITHDRAWN',
+            messages: [...r.messages, statusMsg]
+          };
+        }
+        return r;
+      })
+    );
+  };
 
   const handleUpdateOrderStatus = async (orderId: string, status: 'PROCESSING' | 'IN_TRANSIT' | 'ARRIVED') => {
     const updated = await db.updateOrderStatus(orderId, status);
@@ -298,6 +470,31 @@ export default function App() {
       setOrders((prev) =>
         prev.map((ord) => (ord.orderId === orderId ? updated : ord))
       );
+
+      if (status === 'IN_TRANSIT') {
+        try {
+          const wholesalerProfile = await db.getProfileByName(updated.wholesalerName);
+          if (wholesalerProfile) {
+            const notif: AppNotification = {
+              id: `notif_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`,
+              userId: wholesalerProfile.id,
+              title: 'Order Accepted',
+              message: `Your order ${orderId} for ${updated.quantity} crates of ${updated.cropName} has been accepted by farmer ${updated.farmerName}.`,
+              orderId: orderId,
+              isRead: false,
+              createdAt: new Date().toISOString()
+            };
+            await db.createNotification(notif);
+          }
+        } catch (e) {
+          console.error('Failed to notify wholesaler on order acceptance', e);
+        }
+      }
+
+      if (currentUser) {
+        const fetchedNotifs = await db.getNotifications(currentUser.id);
+        setNotifications(fetchedNotifs);
+      }
     }
   };
 
@@ -591,45 +788,45 @@ export default function App() {
                 <button
                   onClick={() => { setViewedProfile(null); setActiveTab('dashboard'); }}
                   className={`w-full text-left p-2.5 rounded-xl text-xs font-bold leading-none flex items-center gap-3 cursor-pointer duration-150 ${activeTab === 'dashboard'
-                      ? 'bg-neutral-900 text-white shadow-md'
-                      : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
+                    ? 'bg-neutral-900 text-white shadow-md'
+                    : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
                     }`}
                 >
                   <LayoutDashboard size={14} />
                   Dashboard
                 </button>
- 
+
                 <button
                   onClick={() => { setViewedProfile(null); setActiveTab('marketplace'); }}
                   className={`w-full text-left p-2.5 rounded-xl text-xs font-bold leading-none flex items-center gap-3 cursor-pointer duration-150 ${activeTab === 'marketplace'
-                      ? 'bg-neutral-900 text-white shadow-md'
-                      : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
+                    ? 'bg-neutral-900 text-white shadow-md'
+                    : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
                     }`}
                 >
                   <Boxes size={14} />
                   Browse Crops
                 </button>
- 
- 
+
+
                 {currentUser.role === 'FARMER' && (
                   <button
                     onClick={() => { setViewedProfile(null); setActiveTab('inventory'); }}
                     className={`w-full text-left p-2.5 rounded-xl text-xs font-bold leading-none flex items-center gap-3 cursor-pointer duration-150 ${activeTab === 'inventory'
-                        ? 'bg-neutral-900 text-white shadow-md'
-                        : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
+                      ? 'bg-neutral-900 text-white shadow-md'
+                      : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
                       }`}
                   >
                     <Building2 size={14} />
                     My Vegetable List
                   </button>
                 )}
- 
+
                 {currentUser.role === 'WHOLESALER' && (
                   <button
                     onClick={() => { setViewedProfile(null); setActiveTab('cart'); }}
                     className={`w-full text-left p-2.5 rounded-xl text-xs font-bold leading-none flex items-center justify-between cursor-pointer duration-150 ${activeTab === 'cart'
-                        ? 'bg-neutral-900 text-white shadow-md'
-                        : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
+                      ? 'bg-neutral-900 text-white shadow-md'
+                      : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
                       }`}
                   >
                     <span className="flex items-center gap-3">
@@ -643,12 +840,12 @@ export default function App() {
                     )}
                   </button>
                 )}
- 
+
                 <button
                   onClick={() => { setViewedProfile(null); setActiveTab('orders'); }}
                   className={`w-full text-left p-2.5 rounded-xl text-xs font-bold leading-none flex items-center justify-between cursor-pointer duration-150 ${activeTab === 'orders'
-                      ? 'bg-neutral-900 text-white shadow-md'
-                      : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
+                    ? 'bg-neutral-900 text-white shadow-md'
+                    : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
                     }`}
                 >
                   <span className="flex items-center gap-3">
@@ -661,12 +858,12 @@ export default function App() {
                     </span>
                   )}
                 </button>
- 
+
                 <button
                   onClick={() => { setViewedProfile(null); setActiveTab('profile'); }}
                   className={`w-full text-left p-2.5 rounded-xl text-xs font-bold leading-none flex items-center gap-3 cursor-pointer duration-150 ${activeTab === 'profile' && !viewedProfile
-                      ? 'bg-neutral-900 text-white shadow-md'
-                      : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
+                    ? 'bg-neutral-900 text-white shadow-md'
+                    : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
                     }`}
                 >
                   <User size={14} />
@@ -752,8 +949,8 @@ export default function App() {
               <button
                 onClick={() => { setViewedProfile(null); setActiveTab('dashboard'); }}
                 className={`w-full text-left p-2.5 rounded-xl text-xs font-bold leading-none flex items-center gap-3 cursor-pointer duration-150 ${activeTab === 'dashboard'
-                    ? 'bg-neutral-900 text-white shadow-md'
-                    : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
+                  ? 'bg-neutral-900 text-white shadow-md'
+                  : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
                   }`}
               >
                 <LayoutDashboard size={14} />
@@ -763,8 +960,8 @@ export default function App() {
               <button
                 onClick={() => { setViewedProfile(null); setActiveTab('marketplace'); }}
                 className={`w-full text-left p-2.5 rounded-xl text-xs font-bold leading-none flex items-center gap-3 cursor-pointer duration-150 ${activeTab === 'marketplace'
-                    ? 'bg-neutral-900 text-white shadow-md'
-                    : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
+                  ? 'bg-neutral-900 text-white shadow-md'
+                  : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
                   }`}
               >
                 <Boxes size={14} />
@@ -776,8 +973,8 @@ export default function App() {
                 <button
                   onClick={() => { setViewedProfile(null); setActiveTab('inventory'); }}
                   className={`w-full text-left p-2.5 rounded-xl text-xs font-bold leading-none flex items-center gap-3 cursor-pointer duration-150 ${activeTab === 'inventory'
-                      ? 'bg-neutral-900 text-white shadow-md'
-                      : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
+                    ? 'bg-neutral-900 text-white shadow-md'
+                    : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
                     }`}
                 >
                   <Building2 size={14} />
@@ -789,8 +986,8 @@ export default function App() {
                 <button
                   onClick={() => { setViewedProfile(null); setActiveTab('cart'); }}
                   className={`w-full text-left p-2.5 rounded-xl text-xs font-bold leading-none flex items-center justify-between cursor-pointer duration-150 ${activeTab === 'cart'
-                      ? 'bg-neutral-900 text-white shadow-md'
-                      : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
+                    ? 'bg-neutral-900 text-white shadow-md'
+                    : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
                     }`}
                 >
                   <span className="flex items-center gap-3">
@@ -808,8 +1005,8 @@ export default function App() {
               <button
                 onClick={() => { setViewedProfile(null); setActiveTab('orders'); }}
                 className={`w-full text-left p-2.5 rounded-xl text-xs font-bold leading-none flex items-center justify-between cursor-pointer duration-150 ${activeTab === 'orders'
-                    ? 'bg-neutral-900 text-white shadow-md'
-                    : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
+                  ? 'bg-neutral-900 text-white shadow-md'
+                  : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
                   }`}
               >
                 <span className="flex items-center gap-3">
@@ -826,8 +1023,8 @@ export default function App() {
               <button
                 onClick={() => { setViewedProfile(null); setActiveTab('profile'); }}
                 className={`w-full text-left p-2.5 rounded-xl text-xs font-bold leading-none flex items-center gap-3 cursor-pointer duration-150 ${activeTab === 'profile' && !viewedProfile
-                    ? 'bg-neutral-900 text-white shadow-md'
-                    : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
+                  ? 'bg-neutral-900 text-white shadow-md'
+                  : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
                   }`}
               >
                 <User size={14} />
@@ -893,26 +1090,84 @@ export default function App() {
             <div className="flex items-center gap-3">
 
 
-              {/* Simple alert button */}
-              <button
-                onClick={() => {
-                  setShowNotificationCount(false);
-                  alert('Notification Log:\n- Pema Shrestha has sent a counter offer on Tomato (Local)\n- Vehicle BA 3 KHA 8492 departed from Benighat hub.');
-                }}
-                className="p-2.5 bg-neutral-50 hover:bg-neutral-100 text-neutral-600 rounded-2xl transition relative cursor-pointer"
-              >
-                <Bell size={16} />
-                {showNotificationCount && (
-                  <span className="w-2 h-2 bg-red-500 rounded-full absolute top-2 right-2 ring-2 ring-white"></span>
+              <div className="relative">
+                {/* Bell button */}
+                <button
+                  onClick={() => {
+                    setShowNotifDropdown(!showNotifDropdown);
+                  }}
+                  className="p-2.5 bg-neutral-50 hover:bg-neutral-100 text-neutral-600 rounded-2xl transition relative cursor-pointer"
+                >
+                  <Bell size={16} />
+                  {notifications.some(n => !n.isRead) && (
+                    <span className="w-2 h-2 bg-red-500 rounded-full absolute top-2 right-2 ring-2 ring-white"></span>
+                  )}
+                </button>
+
+                {/* Notifications Dropdown Panel */}
+                {showNotifDropdown && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white border border-neutral-150 rounded-2xl shadow-xl z-50 p-4 space-y-3 max-h-96 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-150">
+                    <div className="flex justify-between items-center border-b border-neutral-50 pb-2">
+                      <span className="text-xs font-black text-neutral-800">Notifications</span>
+                      {notifications.some(n => !n.isRead) && (
+                        <button
+                          onClick={async () => {
+                            for (const n of notifications) {
+                              if (!n.isRead) {
+                                await db.markNotificationRead(n.id);
+                              }
+                            }
+                            setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+                          }}
+                          className="text-[10px] text-emerald-600 hover:underline font-bold"
+                        >
+                          Mark all read
+                        </button>
+                      )}
+                    </div>
+
+                    {notifications.length === 0 ? (
+                      <div className="text-center py-6 text-neutral-400 text-xs font-medium">
+                        No notifications yet
+                      </div>
+                    ) : (
+                      <div className="space-y-2.5 divide-y divide-neutral-50">
+                        {notifications.map(n => (
+                          <div
+                            key={n.id}
+                            onClick={async () => {
+                              if (!n.isRead) {
+                                await db.markNotificationRead(n.id);
+                                setNotifications(prev => prev.map(item => item.id === n.id ? { ...item, isRead: true } : item));
+                              }
+                              if (n.orderId) {
+                                setSelectedOrderId(n.orderId);
+                                setActiveTab('orders');
+                              }
+                              setShowNotifDropdown(false);
+                            }}
+                            className={`pt-2.5 text-xs text-left cursor-pointer transition ${n.isRead ? 'opacity-65' : 'font-semibold'}`}
+                          >
+                            <div className="flex justify-between items-start">
+                              <span className="text-[11px] font-bold text-neutral-800 block leading-tight">{n.title}</span>
+                              {!n.isRead && <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0 mt-1"></span>}
+                            </div>
+                            <p className="text-[10px] text-neutral-500 mt-1 leading-normal">{n.message}</p>
+                            <span className="text-[8px] text-neutral-400 block mt-1 font-mono">{new Date(n.createdAt).toLocaleTimeString()}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 )}
-              </button>
+              </div>
             </div>
           </header>
 
           {/* Dynamic Tab Panel Switching */}
           <div className="min-h-[500px]">
             {activeTab === 'dashboard' && renderDashboard()}
-             {activeTab === 'marketplace' && (
+            {activeTab === 'marketplace' && (
               <MarketplacePage
                 listings={listings}
                 onAddToCart={handleAddToCart}
@@ -944,6 +1199,8 @@ export default function App() {
                 orders={orders}
                 currentUser={currentUser}
                 onUpdateOrderStatus={handleUpdateOrderStatus}
+                selectedOrderId={selectedOrderId}
+                onSelectOrder={setSelectedOrderId}
               />
             )}
             {activeTab === 'cart' && (

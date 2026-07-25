@@ -68,7 +68,7 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
     } else {
       onAddListing(listingData);
     }
-    
+
     setShowAddModal(false);
     setNotes('');
     setEditingId(null);
@@ -89,7 +89,7 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
           <p className="text-xs text-neutral-500">See how many crates you have, add new crops, or change your prices.</p>
         </div>
 
-        <button 
+        <button
           onClick={handleOpenAddModal}
           className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-5 rounded-2xl flex items-center gap-2 text-xs cursor-pointer shadow-md transition duration-200"
         >
@@ -99,7 +99,7 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
       </div>
 
       {/* Grid of Key metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div className="bg-white border border-neutral-100 p-6 rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.01)] space-y-2">
           <span className="text-xs font-bold text-neutral-400 uppercase tracking-widest font-mono">My Vegetables Listed</span>
           <div className="text-3xl font-black text-neutral-800">{myListings.length} Active</div>
@@ -117,7 +117,7 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
         <div className="bg-white border border-neutral-100 p-6 rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.01)] space-y-2">
           <span className="text-xs font-bold text-neutral-400 uppercase tracking-widest font-mono">Agreed Payments</span>
           <div className="text-3xl font-black text-amber-500">Rs. 84,500</div>
-          <p className="text-xs text-neutral-500">Orders agreed, waiting for pickup trucks</p>
+          <p className="text-xs text-neutral-500">Bargains agreed, waiting for pickup trucks</p>
         </div>
       </div>
 
@@ -151,9 +151,9 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
                 {myListings.map(item => (
                   <tr key={item.id} className="hover:bg-neutral-50/50 transition duration-150">
                     <td className="py-4 px-2 flex items-center gap-2.5">
-                      <img 
-                        src={item.imageUrl} 
-                        alt={item.cropName} 
+                      <img
+                        src={item.imageUrl}
+                        alt={item.cropName}
                         className="w-9 h-9 rounded-lg object-cover"
                         referrerPolicy="no-referrer"
                       />
@@ -168,24 +168,23 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
                     </td>
                     <td className="py-4 px-2 text-emerald-600 font-black">Rs. {item.pricePerCrate} / Cr</td>
                     <td className="py-4 px-2">
-                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                        item.readyToShip 
-                          ? 'bg-emerald-50 text-emerald-700' 
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold ${item.readyToShip
+                          ? 'bg-emerald-50 text-emerald-700'
                           : 'bg-amber-50 text-amber-700'
-                      }`}>
+                        }`}>
                         <span className={`h-1.5 w-1.5 rounded-full ${item.readyToShip ? 'bg-emerald-500' : 'bg-amber-400'}`}></span>
                         {item.readyToShip ? 'Ready for pickup' : 'Growing in Field'}
                       </span>
                     </td>
                     <td className="py-4 px-2 text-right space-x-2">
-                      <button 
+                      <button
                         onClick={() => handleOpenEditModal(item)}
                         className="p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-emerald-600 rounded-lg transition"
                         title="Edit Listing"
                       >
                         <Edit2 size={16} />
                       </button>
-                      <button 
+                      <button
                         onClick={() => onDeleteListing && onDeleteListing(item.id)}
                         className="p-1.5 text-neutral-500 hover:bg-red-50 hover:text-red-600 rounded-lg transition"
                         title="Delete Listing"
@@ -210,7 +209,7 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
                 <span className="text-[10px] font-bold font-mono text-emerald-600 tracking-wider uppercase block">BizzLedger Growers Group</span>
                 <h3 className="text-xl font-bold text-neutral-900">{editingId ? 'Edit Vegetable Crop' : 'List New Vegetable Crop'}</h3>
               </div>
-              <button 
+              <button
                 onClick={() => setShowAddModal(false)}
                 className="text-neutral-400 hover:text-neutral-600 text-xl font-bold font-mono px-2 py-1 bg-neutral-100 rounded-lg"
               >
@@ -223,7 +222,7 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
                 {/* Crop select */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-neutral-600 block">Vegetable Crop Name</label>
-                  <select 
+                  <select
                     value={cropName}
                     onChange={(e) => {
                       setCropName(e.target.value);
@@ -253,9 +252,9 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
                 {/* Category select */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-neutral-600 block">Vegetable Type</label>
-                  <input 
-                    type="text" 
-                    readOnly 
+                  <input
+                    type="text"
+                    readOnly
                     value={category}
                     className="w-full p-3 bg-neutral-150/40 text-neutral-500 border border-neutral-200 rounded-xl text-xs font-semibold"
                   />
@@ -266,7 +265,7 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
                 {/* District location setup */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-neutral-600 block">Farming District</label>
-                  <select 
+                  <select
                     value={district}
                     onChange={(e) => setDistrict(e.target.value)}
                     className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-semibold focus:outline-hidden"
@@ -280,8 +279,8 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
                 {/* Available volume select */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-neutral-600 block">How many crates available?</label>
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     min={5}
                     value={crates}
                     onChange={(e) => setCrates(Number(e.target.value))}
@@ -293,7 +292,7 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
               {/* Single Price Input */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-neutral-600 block">Price per Crate (Rs.)</label>
-                <input 
+                <input
                   type="number"
                   min={100}
                   value={priceVal}
@@ -304,9 +303,9 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
 
               {/* Shipment status checklist */}
               <div className="flex items-center gap-3">
-                <input 
-                  type="checkbox" 
-                  id="readyShipBox" 
+                <input
+                  type="checkbox"
+                  id="readyShipBox"
                   checked={readyShip}
                   onChange={(e) => setReadyShip(e.target.checked)}
                   className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 rounded border-neutral-300 pointer-events-auto cursor-pointer"
@@ -325,9 +324,8 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
                       key={i}
                       type="button"
                       onClick={() => setImageUrl(opt.value)}
-                      className={`p-1 border rounded-lg overflow-hidden transition ${
-                        imageUrl === opt.value ? 'border-emerald-600 bg-emerald-50/20' : 'border-neutral-200 opacity-60'
-                      }`}
+                      className={`p-1 border rounded-lg overflow-hidden transition ${imageUrl === opt.value ? 'border-emerald-600 bg-emerald-50/20' : 'border-neutral-200 opacity-60'
+                        }`}
                     >
                       <img src={opt.value} alt={opt.label} className="w-full h-8 object-cover rounded-md" referrerPolicy="no-referrer" />
                       <span className="text-[8px] text-center block mt-1 line-clamp-1 font-semibold text-neutral-600">{opt.label}</span>
@@ -345,8 +343,8 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
               {/* Custom Image Upload */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-neutral-600 block">Or Upload Your Own Photo</label>
-                <input 
-                  type="file" 
+                <input
+                  type="file"
                   accept="image/*"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
@@ -365,7 +363,7 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
               {/* Notes */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-neutral-600 block">Notes/Description (Optional)</label>
-                <textarea 
+                <textarea
                   rows={2}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
@@ -376,14 +374,14 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
 
               {/* Actions */}
               <div className="flex gap-3 pt-2">
-                <button 
+                <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
                   className="flex-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-bold py-3 px-4 rounded-xl text-xs cursor-pointer"
                 >
                   Cancel
                 </button>
-                <button 
+                <button
                   type="submit"
                   className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl text-xs cursor-pointer shadow-sm"
                 >
