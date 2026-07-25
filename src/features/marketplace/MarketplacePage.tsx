@@ -25,7 +25,7 @@ export default function MarketplacePage({ listings, onAddToCart, currentUser, on
 
   // Extract unique districts and categories
   const districts = ['All', 'Panchkhal, Kavre', 'Benighat, Dhading', 'Palung, Makwanpur'];
-  const categories = ['All', 'Tomatoes', 'Cabbages', 'Greens', 'Potatoes', 'Squash', 'Other'];
+  const categories = ['All', 'Tomatoes', 'Cabbages', 'Cauliflower', 'Greens', 'Potatoes', 'Squash', 'Fruits', 'Spices', 'Other'];
 
   const normalizeMatch = (query: string, text: string) => {
     if (!query.trim()) return true;

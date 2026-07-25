@@ -21,8 +21,9 @@ export const isSupabaseConfigured = () => {
  * so that the App NEVER crashes, is fully functional, and stores all changes dynamically!
  */
 class DirectLedgerDb {
-  private localKey(name: string) {
-    return `bizzledger_db_${name}`;
+  private localKey(key: string) {
+    if (key === 'listings') return `bizzledger_db_listings_v2`;
+    return `bizzledger_db_${key}`;
   }
 
   constructor() {
