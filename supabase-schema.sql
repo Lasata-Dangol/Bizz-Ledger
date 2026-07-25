@@ -189,6 +189,11 @@ DO $$ BEGIN
       "farmerName" = (SELECT name FROM profiles WHERE id = auth.uid()::text LIMIT 1)
     );
   END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='orders' AND policyname='orders_update_wholesaler') THEN
+    CREATE POLICY "orders_update_wholesaler" ON orders FOR UPDATE USING (
+      "wholesalerName" = (SELECT name FROM profiles WHERE id = auth.uid()::text LIMIT 1)
+    );
+  END IF;
 END $$;
 
 -- notifications: each user sees only their own

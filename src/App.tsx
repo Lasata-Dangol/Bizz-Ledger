@@ -194,18 +194,28 @@ export default function App() {
   useEffect(() => {
     if (!isLoggedIn || !currentUser) return;
     const handleStorageEvent = async (event: StorageEvent) => {
-      if (event.key === `bizzledger_db_notifications`) {
-        try {
+      try {
+        if (event.key === `bizzledger_db_notifications`) {
           const fetchedNotifs = await db.getNotifications(currentUser.id);
           setNotifications(fetchedNotifs);
-        } catch {
-          // silent fail
         }
+        if (event.key === `bizzledger_db_orders`) {
+          const fetchedOrders = await db.getOrders(currentUser.name, currentUser.role);
+          setOrders(fetchedOrders);
+        }
+        if (event.key === `bizzledger_db_profiles`) {
+          const profile = await db.getProfile(currentUser.id);
+          if (profile) {
+            setCurrentUser(profile);
+          }
+        }
+      } catch {
+        // silent fail
       }
     };
     window.addEventListener('storage', handleStorageEvent);
     return () => window.removeEventListener('storage', handleStorageEvent);
-  }, [isLoggedIn, currentUser?.id]);
+  }, [isLoggedIn, currentUser?.id, currentUser?.name, currentUser?.role]);
 
   // Sync session states
   useEffect(() => {
@@ -451,6 +461,53 @@ export default function App() {
       if (currentUser) {
         const fetchedNotifs = await db.getNotifications(currentUser.id);
         setNotifications(fetchedNotifs);
+      }
+    }
+  };
+
+  const handleReceiveOrder = async (orderId: string) => {
+    const order = orders.find(o => o.orderId === orderId);
+    if (!order) return;
+    
+    // Instead of deleting, update status to ARRIVED
+    const updated = await db.updateOrderStatus(orderId, 'ARRIVED');
+    if (updated) {
+      setOrders(prev => prev.map(ord => ord.orderId === orderId ? updated : ord));
+      setSelectedOrderId(null); // Reset selection
+      
+      try {
+        // 1. Increment totalDeals for wholesaler (currentUser)
+        if (currentUser) {
+          const updatedWholesaler = {
+            ...currentUser,
+            totalDeals: (currentUser.totalDeals || 0) + 1
+          };
+          await db.saveProfile(updatedWholesaler);
+          setCurrentUser(updatedWholesaler);
+        }
+
+        // 2. Lookup and increment totalDeals for farmer, and send notification
+        const farmerProfile = await db.getProfileByName(updated.farmerName);
+        if (farmerProfile) {
+          const updatedFarmer = {
+            ...farmerProfile,
+            totalDeals: (farmerProfile.totalDeals || 0) + 1
+          };
+          await db.saveProfile(updatedFarmer);
+
+          const farmerNotif: AppNotification = {
+            id: `notif_received_fr_${Date.now()}`,
+            userId: farmerProfile.id,
+            title: '✅ Product Received',
+            message: `The wholesaler ${updated.wholesalerName} has received ${updated.quantity} cr. of ${updated.cropName}. The bill has been cleared.`,
+            orderId: orderId,
+            isRead: false,
+            createdAt: new Date().toISOString()
+          };
+          await db.createNotification(farmerNotif);
+        }
+      } catch (e) {
+         console.error('Failed to notify farmer or increment deal stats on order receive', e);
       }
     }
   };
@@ -1243,6 +1300,7 @@ export default function App() {
                 orders={orders}
                 currentUser={currentUser}
                 onUpdateOrderStatus={handleUpdateOrderStatus}
+                onReceiveOrder={handleReceiveOrder}
                 selectedOrderId={selectedOrderId}
                 onSelectOrder={setSelectedOrderId}
               />

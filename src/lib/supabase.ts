@@ -294,6 +294,22 @@ class DirectLedgerDb {
     return null;
   }
 
+  async deleteOrder(orderId: string): Promise<boolean> {
+    if (supabase) {
+      try {
+        const { error } = await supabase.from('orders').delete().eq('orderId', orderId);
+        if (!error) return true;
+        console.warn('Supabase order deletion failed, falling back to local storage', error);
+      } catch (e) {
+        console.warn('Supabase order deletion failed, falling back to local storage', e);
+      }
+    }
+    let orders = this.getLocalList<Order>('orders', INITIAL_ORDERS);
+    orders = orders.filter(o => o.orderId !== orderId);
+    this.setLocalList('orders', orders);
+    return true;
+  }
+
   // Local Storage generic read/write
   private getLocalList<T>(key: string, initialSeed: T[]): T[] {
     const raw = localStorage.getItem(this.localKey(key));

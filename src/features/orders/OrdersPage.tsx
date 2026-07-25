@@ -6,17 +6,19 @@ interface OrdersPageProps {
   orders: Order[];
   currentUser: UserProfile;
   onUpdateOrderStatus: (orderId: string, status: 'PROCESSING' | 'IN_TRANSIT' | 'ARRIVED') => void;
+  onReceiveOrder?: (orderId: string) => void;
   selectedOrderId?: string | null;
   onSelectOrder?: (orderId: string | null) => void;
 }
 
-export default function OrdersPage({ orders, currentUser, onUpdateOrderStatus, selectedOrderId: propSelectedOrderId, onSelectOrder }: OrdersPageProps) {
-  const [localSelectedOrderId, setLocalSelectedOrderId] = useState<string | null>(orders[0]?.orderId || null);
+export default function OrdersPage({ orders, currentUser, onUpdateOrderStatus, onReceiveOrder, selectedOrderId: propSelectedOrderId, onSelectOrder }: OrdersPageProps) {
+  const activeOrders = orders.filter(o => o.status !== 'ARRIVED');
+  const [localSelectedOrderId, setLocalSelectedOrderId] = useState<string | null>(activeOrders[0]?.orderId || null);
 
   const activeOrderId = propSelectedOrderId !== undefined ? propSelectedOrderId : localSelectedOrderId;
   const setSelectedOrderId = onSelectOrder || setLocalSelectedOrderId;
 
-  const activeOrder = orders.find(o => o.orderId === activeOrderId) || orders[0];
+  const activeOrder = activeOrders.find(o => o.orderId === activeOrderId) || activeOrders[0];
 
   return (
     <div className="space-y-6">
@@ -30,12 +32,12 @@ export default function OrdersPage({ orders, currentUser, onUpdateOrderStatus, s
         {/* Orders side list column */}
         <div className="lg:col-span-4 bg-white border border-neutral-100 rounded-3xl p-5 shadow-[0_4px_20px_rgba(0,0,0,0.01)] flex flex-col gap-4">
           <div>
-            <h3 className="font-bold text-neutral-800 text-sm">Your Delivery Bills ({orders.length})</h3>
+            <h3 className="font-bold text-neutral-800 text-sm">Your Delivery Bills ({activeOrders.length})</h3>
             <p className="text-[10px] text-neutral-400">Select a bill below to see details</p>
           </div>
 
           <div className="space-y-2.5 overflow-y-auto max-h-[460px] pr-1">
-            {orders.map((order) => {
+            {activeOrders.map((order) => {
               const isSelected = order.orderId === activeOrderId;
               return (
                 <button
@@ -177,6 +179,16 @@ export default function OrdersPage({ orders, currentUser, onUpdateOrderStatus, s
                     className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-2xl transition duration-150 cursor-pointer shadow-sm text-center block"
                   >
                     Accept Order & Settle Shipment
+                  </button>
+                )}
+
+                {/* Mark as Received Action Button for Wholesaler */}
+                {currentUser.role === 'WHOLESALER' && activeOrder.status === 'IN_TRANSIT' && onReceiveOrder && (
+                  <button
+                    onClick={() => onReceiveOrder(activeOrder.orderId)}
+                    className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-2xl transition duration-150 cursor-pointer shadow-sm text-center block mt-2"
+                  >
+                    Mark as Received
                   </button>
                 )}
 
