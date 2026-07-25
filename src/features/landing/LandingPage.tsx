@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { UserProfile, KalimatiRate } from '../../types';
-import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+import { supabase, isSupabaseConfigured, db } from '../../lib/supabase';
 import { 
   Leaf, 
   Sparkles, 
@@ -68,12 +68,25 @@ export default function LandingPage({ onLogin, kalimatiRates }: LandingPageProps
     }
   };
 
-  const handleSelectSimulatedAccount = (email: string, name: string, avatar: string) => {
+  const handleSelectSimulatedAccount = async (email: string, name: string, avatar: string) => {
     setShowSimulatedGooglePopup(false);
-    
-    // Create new profile object using Google Login details & desired network role
+
+    // Check if a profile already exists for this name so we reuse the same stable ID.
+    // This is critical: notifications are stored with the farmer's userId, so their
+    // ID must stay the same across logins or they'll never see their notifications.
+    let stableId = `google_user_${name.replace(/\s+/g, '_').toLowerCase()}`;
+    try {
+      const existingProfile = await db.getProfileByName(name);
+      if (existingProfile) {
+        stableId = existingProfile.id;
+      }
+    } catch {
+      // If lookup fails, fall back to deterministic name-based ID
+    }
+
+    // Create/update profile object using Google Login details & desired network role
     const newUser: UserProfile = {
-      id: `google_user_${Date.now()}`,
+      id: stableId,
       name: name,
       role: selectedRole,
       avatar: avatar,
@@ -84,6 +97,8 @@ export default function LandingPage({ onLogin, kalimatiRates }: LandingPageProps
       isOnboarded: false, // New Google sign-ups start at step 1 onboarding
     };
 
+    // Save profile so future getProfileByName() lookups find the correct stable ID
+    await db.saveProfile(newUser);
     onLogin(newUser);
   };
 

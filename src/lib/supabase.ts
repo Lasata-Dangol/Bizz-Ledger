@@ -81,7 +81,7 @@ class DirectLedgerDb {
           .upsert(profile)
           .select()
           .single();
-        if (!error && data) return data as UserProfile;
+        if (error) console.warn('Supabase profiles upsert error:', error);
       } catch (e) {
         console.warn('Supabase profiles upsert failed, falling back to local storage', e);
       }
@@ -144,7 +144,7 @@ class DirectLedgerDb {
           .insert(listing)
           .select()
           .single();
-        if (!error && data) return data as VegetableListing;
+        if (error) console.warn('Supabase listing insert error:', error);
       } catch (e) {
         console.warn('Supabase listing insert failed, falling back to local storage', e);
       }
@@ -165,7 +165,7 @@ class DirectLedgerDb {
           .eq('id', listing.id)
           .select()
           .single();
-        if (!error && data) return data as VegetableListing;
+        if (error) console.warn('Supabase listing update error:', error);
       } catch (e) {
         console.warn('Supabase listing update failed, falling back to local storage', e);
       }
@@ -187,7 +187,7 @@ class DirectLedgerDb {
           .from('listings')
           .delete()
           .eq('id', listingId);
-        if (!error) return true;
+        if (error) console.warn('Supabase listing deletion error:', error);
       } catch (e) {
         console.warn('Supabase listing deletion failed, falling back to local storage', e);
       }
@@ -229,24 +229,32 @@ class DirectLedgerDb {
   }
 
   // --- Orders Operations ---
-  async getOrders(userId: string, role: string): Promise<Order[]> {
+  async getOrders(userId: string, role: 'FARMER' | 'WHOLESALER'): Promise<Order[]> {
+    let supabaseOrders: Order[] = [];
     if (supabase) {
       try {
-        const query = supabase.from('orders').select('*');
-        if (role === 'FARMER') {
-          query.eq('farmerName', userId); // or map via name/ids appropriately
-        } else {
-          query.eq('wholesalerName', userId);
-        }
-        const { data, error } = await query;
-        if (!error && data) return data as Order[];
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .or(`farmerName.eq.${userId},wholesalerName.eq.${userId}`)
+          .order('createdAt', { ascending: false });
+        if (!error && data) supabaseOrders = data as Order[];
       } catch (e) {
         console.warn('Supabase orders fetch failed, falling back to local storage', e);
       }
     }
 
-    const orders = this.getLocalList<Order>('orders', INITIAL_ORDERS);
-    return orders;
+    const localList = this.getLocalList<Order>('orders', INITIAL_ORDERS);
+    const localOrders = role === 'FARMER'
+      ? localList.filter(o => o.farmerName === userId)
+      : localList.filter(o => o.wholesalerName === userId);
+
+    const merged = [...supabaseOrders];
+    const existingIds = new Set(merged.map(o => o.orderId));
+    for (const o of localOrders) {
+      if (!existingIds.has(o.orderId)) merged.push(o);
+    }
+    return merged.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
 
   async createOrder(order: Order): Promise<Order> {
@@ -257,7 +265,7 @@ class DirectLedgerDb {
           .insert(order)
           .select()
           .single();
-        if (!error && data) return data as Order;
+        if (error) console.warn('Supabase order creation error:', error);
       } catch (e) {
         console.warn('Supabase order creation failed, falling back to local storage', e);
       }
@@ -278,7 +286,7 @@ class DirectLedgerDb {
           .eq('orderId', orderId)
           .select()
           .single();
-        if (!error && data) return data as Order;
+        if (error) console.warn('Supabase order update error:', error);
       } catch (e) {
         console.warn('Supabase order update failed, falling back to local storage', e);
       }
@@ -298,8 +306,7 @@ class DirectLedgerDb {
     if (supabase) {
       try {
         const { error } = await supabase.from('orders').delete().eq('orderId', orderId);
-        if (!error) return true;
-        console.warn('Supabase order deletion failed, falling back to local storage', error);
+        if (error) console.warn('Supabase order deletion error:', error);
       } catch (e) {
         console.warn('Supabase order deletion failed, falling back to local storage', e);
       }
@@ -326,6 +333,7 @@ class DirectLedgerDb {
 
   // --- Notifications Operations ---
   async getNotifications(userId: string): Promise<AppNotification[]> {
+    let supabaseNotifs: AppNotification[] = [];
     if (supabase) {
       try {
         const { data, error } = await supabase
@@ -333,24 +341,35 @@ class DirectLedgerDb {
           .select('*')
           .eq('userId', userId)
           .order('createdAt', { ascending: false });
-        if (!error && data) return data as AppNotification[];
+        if (!error && data) {
+          supabaseNotifs = data as AppNotification[];
+        }
       } catch (e) {
         console.warn('Supabase notifications fetch failed, falling back to local storage', e);
       }
     }
-    const list = this.getLocalList<AppNotification>('notifications', []);
-    return list.filter(n => n.userId === userId).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    const localList = this.getLocalList<AppNotification>('notifications', []);
+    const localNotifs = localList.filter(n => n.userId === userId);
+
+    // Merge by ID to prevent duplicates (handles RLS masking local data)
+    const merged = [...supabaseNotifs];
+    const existingIds = new Set(merged.map(n => n.id));
+    for (const n of localNotifs) {
+      if (!existingIds.has(n.id)) {
+        merged.push(n);
+      }
+    }
+    return merged.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
 
   async createNotification(notification: AppNotification): Promise<AppNotification> {
     if (supabase) {
       try {
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from('notifications')
-          .insert(notification)
-          .select()
-          .single();
-        if (!error && data) return data as AppNotification;
+          .insert(notification);
+        // We don't return here so that we ALWAYS dual-write to local storage
+        if (error) console.warn('Supabase notification insertion error:', error);
       } catch (e) {
         console.warn('Supabase notification insertion failed, falling back to local storage', e);
       }
@@ -359,9 +378,10 @@ class DirectLedgerDb {
     list.unshift(notification);
     this.setLocalList('notifications', list);
     // Notify other open tabs (e.g. the farmer's tab) that new notifications are available.
-    // The native `storage` event only fires in tabs OTHER than the one that wrote,
-    // so this is the perfect cross-tab delivery mechanism.
+    // We dispatch both to localStorage directly AND fire a StorageEvent so that
+    // the App.tsx listener (which checks 'bizzledger_db_notifications') gets triggered.
     try {
+      localStorage.setItem(this.localKey('notifications'), JSON.stringify(list));
       window.dispatchEvent(
         new StorageEvent('storage', {
           key: this.localKey('notifications'),

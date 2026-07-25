@@ -174,7 +174,7 @@ export default function App() {
     }
   }, [isLoggedIn, currentUser?.id]);
 
-  // Poll notifications every 8 seconds so farmers see purchase alerts in real time
+  // Poll notifications every 3 seconds so farmers see purchase alerts in real time
   useEffect(() => {
     if (!isLoggedIn || !currentUser) return;
     const interval = setInterval(async () => {
@@ -184,7 +184,7 @@ export default function App() {
       } catch {
         // silent fail
       }
-    }, 8000);
+    }, 3000);
     return () => clearInterval(interval);
   }, [isLoggedIn, currentUser?.id]);
 
@@ -308,10 +308,19 @@ export default function App() {
 
       const matchedItem = checkoutItems.find(item => item.listing.id === ord.listingId);
       if (matchedItem) {
+        // Lookup farmer by name to get their current userId (handles OAuth signup ID mismatches)
+        let farmerUserId = matchedItem.listing.farmerId;
+        try {
+          const farmerProfile = await db.getProfileByName(matchedItem.listing.farmerName);
+          if (farmerProfile) farmerUserId = farmerProfile.id;
+        } catch {
+          // fallback to farmerId from listing
+        }
+
         // Notify farmer: someone bought their veggie
         const farmerNotif: AppNotification = {
           id: `notif_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`,
-          userId: matchedItem.listing.farmerId,
+          userId: farmerUserId,
           title: '🛒 New Purchase!',
           message: `${ord.wholesalerName} bought ${ord.quantity} cr. of your ${ord.cropName} — Rs. ${ord.totalPrice.toLocaleString()} total. Delivery is being arranged.`,
           orderId: ord.orderId,
