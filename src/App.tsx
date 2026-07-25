@@ -50,9 +50,9 @@ export default function App() {
     return saved === 'true';
   });
 
-  const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
     const saved = localStorage.getItem('bl_current_user');
-    return saved ? JSON.parse(saved) : MOCK_USERS[2]; // Default
+    return saved ? JSON.parse(saved) : null;
   });
 
   const [listings, setListings] = useState<VegetableListing[]>([]);
@@ -174,7 +174,7 @@ export default function App() {
     }
   }, [isLoggedIn, currentUser?.id]);
 
-  // Poll notifications every 8 seconds so farmers see purchase alerts in real time
+  // Poll notifications every 3 seconds so farmers see purchase alerts in real time
   useEffect(() => {
     if (!isLoggedIn || !currentUser) return;
     const interval = setInterval(async () => {
@@ -184,7 +184,7 @@ export default function App() {
       } catch {
         // silent fail
       }
-    }, 8000);
+    }, 3000);
     return () => clearInterval(interval);
   }, [isLoggedIn, currentUser?.id]);
 
@@ -291,7 +291,9 @@ export default function App() {
         listingId: item.listing.id,
         cropName: item.listing.cropName,
         farmerName: item.listing.farmerName,
+        farmerId: item.listing.farmerId,
         wholesalerName: currentUser.name,
+        wholesalerId: currentUser.id,
         finalPricePerCrate: item.listing.pricePerCrate,
         quantity: item.quantity,
         totalPrice: item.listing.pricePerCrate * item.quantity,
@@ -308,10 +310,19 @@ export default function App() {
 
       const matchedItem = checkoutItems.find(item => item.listing.id === ord.listingId);
       if (matchedItem) {
+        // Lookup farmer by name to get their current userId (handles OAuth signup ID mismatches)
+        let farmerUserId = matchedItem.listing.farmerId;
+        try {
+          const farmerProfile = await db.getProfileByName(matchedItem.listing.farmerName);
+          if (farmerProfile) farmerUserId = farmerProfile.id;
+        } catch {
+          // fallback to farmerId from listing
+        }
+
         // Notify farmer: someone bought their veggie
         const farmerNotif: AppNotification = {
           id: `notif_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`,
-          userId: matchedItem.listing.farmerId,
+          userId: farmerUserId,
           title: '🛒 New Purchase!',
           message: `${ord.wholesalerName} bought ${ord.quantity} cr. of your ${ord.cropName} — Rs. ${ord.totalPrice.toLocaleString()} total. Delivery is being arranged.`,
           orderId: ord.orderId,
@@ -319,19 +330,19 @@ export default function App() {
           createdAt: new Date().toISOString()
         };
         await db.createNotification(farmerNotif);
-      }
 
-      // Notify buyer: transaction confirmed
-      const buyerNotif: AppNotification = {
-        id: `notif_buyer_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`,
-        userId: currentUser.id,
-        title: '✅ Order Confirmed',
-        message: `Your order of ${ord.quantity} cr. of ${ord.cropName} from ${ord.farmerName} is confirmed. Rs. ${ord.totalPrice.toLocaleString()} — truck on its way.`,
-        orderId: ord.orderId,
-        isRead: false,
-        createdAt: new Date().toISOString()
-      };
-      await db.createNotification(buyerNotif);
+        // Notify buyer: transaction confirmed
+        const buyerNotif: AppNotification = {
+          id: `notif_${Date.now()}_buyer_${Math.floor(1000 + Math.random() * 9000)}`,
+          userId: currentUser.id,
+          title: '🛒 Order Placed',
+          message: `Your order for ${ord.quantity} crates of ${ord.cropName} has been placed. Waiting for farmer confirmation. Total: Rs. ${ord.totalPrice.toLocaleString()}.`,
+          orderId: ord.orderId,
+          isRead: false,
+          createdAt: new Date().toISOString()
+        };
+        await db.createNotification(buyerNotif);
+      }
     }
 
     setOrders((prev) => [...newCreatedOrders, ...prev]);
@@ -396,6 +407,8 @@ export default function App() {
 
 
   const handleUpdateOrderStatus = async (orderId: string, status: 'PROCESSING' | 'IN_TRANSIT' | 'ARRIVED') => {
+    // Grab order from current state BEFORE update so we retain wholesalerId
+    const existingOrder = orders.find(o => o.orderId === orderId);
     const updated = await db.updateOrderStatus(orderId, status);
     if (updated) {
       setOrders((prev) =>
@@ -404,18 +417,26 @@ export default function App() {
 
       if (status === 'IN_TRANSIT') {
         try {
-          const wholesalerProfile = await db.getProfileByName(updated.wholesalerName);
-          if (wholesalerProfile) {
+          // Prefer wholesalerId from state order > updated order > name lookup
+          const wId =
+            existingOrder?.wholesalerId ||
+            updated.wholesalerId ||
+            (await db.getProfileByName(updated.wholesalerName))?.id;
+          console.log('[NotifDebug] IN_TRANSIT — wId:', wId, 'wholesalerName:', updated.wholesalerName);
+          if (wId) {
             const notif: AppNotification = {
               id: `notif_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`,
-              userId: wholesalerProfile.id,
-              title: '🚚 Shipment Started',
-              message: `${updated.farmerName} accepted your order — ${updated.quantity} cr. of ${updated.cropName} is now on the truck. Truck: ${updated.vehicleNumber || 'Assigned'}.`,
+              userId: wId,
+              title: '✅ Order Confirmed',
+              message: `${updated.farmerName} has confirmed your order. ${updated.quantity} cr. of ${updated.cropName} is now on the truck. Truck: ${updated.vehicleNumber || 'Assigned'}.`,
               orderId: orderId,
               isRead: false,
               createdAt: new Date().toISOString()
             };
             await db.createNotification(notif);
+            console.log('[NotifDebug] Notification created for wId:', wId);
+          } else {
+            console.warn('[NotifDebug] Could not resolve wholesaler ID — notification NOT sent');
           }
         } catch (e) {
           console.error('Failed to notify wholesaler on order acceptance', e);
@@ -425,11 +446,14 @@ export default function App() {
       if (status === 'ARRIVED') {
         try {
           // Notify wholesaler: delivery done
-          const wholesalerProfile = await db.getProfileByName(updated.wholesalerName);
-          if (wholesalerProfile) {
+          const wId =
+            existingOrder?.wholesalerId ||
+            updated.wholesalerId ||
+            (await db.getProfileByName(updated.wholesalerName))?.id;
+          if (wId) {
             const notif: AppNotification = {
               id: `notif_arrived_ws_${Date.now()}`,
-              userId: wholesalerProfile.id,
+              userId: wId,
               title: '📦 Delivery Complete',
               message: `${updated.quantity} cr. of ${updated.cropName} from ${updated.farmerName} has arrived. Transaction complete — Rs. ${updated.totalPrice.toLocaleString()} settled.`,
               orderId: orderId,
@@ -653,18 +677,13 @@ export default function App() {
     );
   };
 
-  if (!isLoggedIn) {
+  if (!isLoggedIn || !currentUser) {
     return (
       <LandingPage
         kalimatiRates={kalimatiRates}
         onLogin={(user) => {
           setCurrentUser(user);
           setIsLoggedIn(true);
-          // Pre-populate mock users as already onboarded so quick login is smooth
-          const isMockUser = MOCK_USERS.some(m => m.id === user.id);
-          if (isMockUser) {
-            user.isOnboarded = true;
-          }
           if (user.isOnboarded) {
             if (user.role === 'FARMER') {
               setActiveTab('inventory');
@@ -681,7 +700,7 @@ export default function App() {
   }
 
   // Intercept for complete account onboarding details
-  if (isLoggedIn && currentUser && currentUser.isOnboarded === false) {
+  if (currentUser.isOnboarded === false) {
     return (
       <OnboardingPage
         currentUser={currentUser}
@@ -1228,6 +1247,8 @@ export default function App() {
                               if (n.orderId) {
                                 setSelectedOrderId(n.orderId);
                                 setActiveTab('orders');
+                                // Clear after render so future manual visits don't re-select this order
+                                setTimeout(() => setSelectedOrderId(null), 500);
                               }
                               setShowNotifDropdown(false);
                             }}

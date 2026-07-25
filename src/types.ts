@@ -38,7 +38,7 @@ export interface UserProfile {
 export interface VegetableListing {
   id: string;
   cropName: string;
-  category: 'Tomatoes' | 'Cabbages' | 'Greens' | 'Potatoes' | 'Squash' | 'Other';
+  category: 'Tomatoes' | 'Cabbages' | 'Cauliflower' | 'Greens' | 'Potatoes' | 'Squash' | 'Fruits' | 'Spices' | 'Other';
   district: string; // e.g. Panchkhal, Dhading, Kakani, Palung
   farmerId: string;
   farmerName: string;
@@ -56,7 +56,9 @@ export interface Order {
   listingId: string;
   cropName: string;
   farmerName: string;
+  farmerId?: string;
   wholesalerName: string;
+  wholesalerId?: string;
   finalPricePerCrate: number;
   quantity: number;
   totalPrice: number;

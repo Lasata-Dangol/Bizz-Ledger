@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { UserProfile, KalimatiRate } from '../../types';
-import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+import { supabase, isSupabaseConfigured, db } from '../../lib/supabase';
 import { 
   Leaf, 
   Sparkles, 
@@ -68,12 +68,25 @@ export default function LandingPage({ onLogin, kalimatiRates }: LandingPageProps
     }
   };
 
-  const handleSelectSimulatedAccount = (email: string, name: string, avatar: string) => {
+  const handleSelectSimulatedAccount = async (email: string, name: string, avatar: string) => {
     setShowSimulatedGooglePopup(false);
-    
-    // Create new profile object using Google Login details & desired network role
+
+    // Check if a profile already exists for this name so we reuse the same stable ID.
+    // This is critical: notifications are stored with the farmer's userId, so their
+    // ID must stay the same across logins or they'll never see their notifications.
+    let stableId = `google_user_${name.replace(/\s+/g, '_').toLowerCase()}`;
+    try {
+      const existingProfile = await db.getProfileByName(name);
+      if (existingProfile) {
+        stableId = existingProfile.id;
+      }
+    } catch {
+      // If lookup fails, fall back to deterministic name-based ID
+    }
+
+    // Create/update profile object using Google Login details & desired network role
     const newUser: UserProfile = {
-      id: `google_user_${Date.now()}`,
+      id: stableId,
       name: name,
       role: selectedRole,
       avatar: avatar,
@@ -84,6 +97,8 @@ export default function LandingPage({ onLogin, kalimatiRates }: LandingPageProps
       isOnboarded: false, // New Google sign-ups start at step 1 onboarding
     };
 
+    // Save profile so future getProfileByName() lookups find the correct stable ID
+    await db.saveProfile(newUser);
     onLogin(newUser);
   };
 
@@ -404,38 +419,35 @@ export default function LandingPage({ onLogin, kalimatiRates }: LandingPageProps
               <p className="text-[11px] text-neutral-400">Select which active identity credential from your browser session to authorize direct trade desk access:</p>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-4">
+              <div>
+                <label className="text-[11px] font-bold uppercase text-neutral-500 tracking-wider block mb-1">Your Full Name</label>
+                <input
+                  type="text"
+                  id="simulated-name-input"
+                  placeholder="Enter your name"
+                  className="w-full text-xs p-3 bg-neutral-50 border border-neutral-200 text-neutral-900 rounded-xl focus:outline-hidden focus:border-emerald-500 transition"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                      const name = e.currentTarget.value.trim();
+                      handleSelectSimulatedAccount(`${name.toLowerCase().replace(/\s+/g, '.')}@gmail.com`, name, 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80');
+                    }
+                  }}
+                />
+              </div>
               <button
-                onClick={() => handleSelectSimulatedAccount('pema.shrestha@gmail.com', 'Pema Shrestha', 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80')}
-                className="w-full text-left p-2.5 hover:bg-neutral-50 rounded-xl border border-neutral-100 flex items-center gap-3 transition cursor-pointer"
+                onClick={() => {
+                  const input = document.getElementById('simulated-name-input') as HTMLInputElement;
+                  if (input && input.value.trim()) {
+                    const name = input.value.trim();
+                    handleSelectSimulatedAccount(`${name.toLowerCase().replace(/\s+/g, '.')}@gmail.com`, name, 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80');
+                  } else {
+                    alert("Please enter a name to continue");
+                  }
+                }}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-3 rounded-xl transition duration-200 shadow-md cursor-pointer"
               >
-                <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80" alt="Pema" className="w-9 h-9 rounded-xl object-cover" referrerPolicy="no-referrer" />
-                <div>
-                  <span className="text-xs font-bold text-neutral-800 block">Pema Shrestha</span>
-                  <span className="text-[10px] text-neutral-400 block">pema.shrestha@gmail.com</span>
-                </div>
-              </button>
-
-              <button
-                onClick={() => handleSelectSimulatedAccount('manoj.dahal@gmail.com', 'Manoj Dahal', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80')}
-                className="w-full text-left p-2.5 hover:bg-neutral-50 rounded-xl border border-neutral-100 flex items-center gap-3 transition cursor-pointer"
-              >
-                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80" alt="Manoj" className="w-9 h-9 rounded-xl object-cover" referrerPolicy="no-referrer" />
-                <div>
-                  <span className="text-xs font-bold text-neutral-800 block">Manoj Dahal</span>
-                  <span className="text-[10px] text-neutral-400 block">manoj.dahal@gmail.com</span>
-                </div>
-              </button>
-
-              <button
-                onClick={() => handleSelectSimulatedAccount('ramesh.traders@gmail.com', 'Ramesh Traders', 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150&auto=format&fit=crop&q=80')}
-                className="w-full text-left p-2.5 hover:bg-neutral-50 rounded-xl border border-neutral-100 flex items-center gap-3 transition cursor-pointer"
-              >
-                <img src="https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150&auto=format&fit=crop&q=80" alt="Ramesh" className="w-9 h-9 rounded-xl object-cover" referrerPolicy="no-referrer" />
-                <div>
-                  <span className="text-xs font-bold text-neutral-800 block">Ramesh Traders</span>
-                  <span className="text-[10px] text-neutral-400 block">ramesh.traders@gmail.com</span>
-                </div>
+                Continue as Guest
               </button>
             </div>
 

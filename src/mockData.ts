@@ -136,7 +136,7 @@ export const INITIAL_LISTINGS: VegetableListing[] = [
   {
     id: 'list_seed_004',
     cropName: 'Mustang Red Apples',
-    category: 'Other',
+    category: 'Fruits',
     district: 'Marpha, Mustang',
     farmerId: 'farmer_sonam',
     farmerName: 'Sonam Gurung',
@@ -151,7 +151,7 @@ export const INITIAL_LISTINGS: VegetableListing[] = [
   {
     id: 'list_seed_005',
     cropName: 'Organic Ginger (Adhuwa)',
-    category: 'Other',
+    category: 'Spices',
     district: 'Ilam, Eastern Nepal',
     farmerId: 'farmer_bikas',
     farmerName: 'Bikas Adhikari',
@@ -166,7 +166,7 @@ export const INITIAL_LISTINGS: VegetableListing[] = [
   {
     id: 'list_seed_006',
     cropName: 'Cauliflower (Local White)',
-    category: 'Other',
+    category: 'Cauliflower',
     district: 'Benighat, Dhading',
     farmerId: 'farmer_manoj',
     farmerName: 'Manoj Dahal',
@@ -181,7 +181,7 @@ export const INITIAL_LISTINGS: VegetableListing[] = [
   {
     id: 'list_seed_007',
     cropName: 'Ilam Cardamom (Alaichi)',
-    category: 'Other',
+    category: 'Spices',
     district: 'Ilam, Eastern Nepal',
     farmerId: 'farmer_bikas',
     farmerName: 'Bikas Adhikari',
