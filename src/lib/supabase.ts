@@ -99,7 +99,13 @@ class DirectLedgerDb {
       }
     }
 
-    return this.getLocalList<VegetableListing>('listings', INITIAL_LISTINGS);
+    const cached = this.getLocalList<VegetableListing>('listings', INITIAL_LISTINGS);
+    // If cache is empty (stale empty seed), return the fresh seed data
+    if (cached.length === 0) {
+      this.setLocalList('listings', INITIAL_LISTINGS);
+      return INITIAL_LISTINGS;
+    }
+    return cached;
   }
 
   async createListing(listing: VegetableListing): Promise<VegetableListing> {
@@ -190,8 +196,8 @@ class DirectLedgerDb {
       return JSON.parse(localData);
     }
 
-    // No data yet, return empty array
-    return [];
+    // No data yet — use mock seed data so the ticker always shows
+    return KALIMATI_RATES;
   }
 
   // --- Orders Operations ---
