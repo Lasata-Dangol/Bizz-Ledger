@@ -173,6 +173,20 @@ export default function App() {
     }
   }, [isLoggedIn, currentUser?.id]);
 
+  // Poll notifications every 8 seconds so farmers see purchase alerts in real time
+  useEffect(() => {
+    if (!isLoggedIn || !currentUser) return;
+    const interval = setInterval(async () => {
+      try {
+        const fetchedNotifs = await db.getNotifications(currentUser.id);
+        setNotifications(fetchedNotifs);
+      } catch {
+        // silent fail
+      }
+    }, 8000);
+    return () => clearInterval(interval);
+  }, [isLoggedIn, currentUser?.id]);
+
   // Sync session states
   useEffect(() => {
     localStorage.setItem('bl_logged_in', String(isLoggedIn));
@@ -264,17 +278,30 @@ export default function App() {
 
       const matchedItem = checkoutItems.find(item => item.listing.id === ord.listingId);
       if (matchedItem) {
-        const notif: AppNotification = {
+        // Notify farmer: someone bought their veggie
+        const farmerNotif: AppNotification = {
           id: `notif_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`,
           userId: matchedItem.listing.farmerId,
-          title: 'New Order Received',
-          message: `${ord.wholesalerName} placed a new order for ${ord.quantity} crates of ${ord.cropName} at Rs. ${ord.finalPricePerCrate} per crate. Status: ${ord.status}.`,
+          title: '🛒 New Purchase!',
+          message: `${ord.wholesalerName} bought ${ord.quantity} cr. of your ${ord.cropName} — Rs. ${ord.totalPrice.toLocaleString()} total. Delivery is being arranged.`,
           orderId: ord.orderId,
           isRead: false,
           createdAt: new Date().toISOString()
         };
-        await db.createNotification(notif);
+        await db.createNotification(farmerNotif);
       }
+
+      // Notify buyer: transaction confirmed
+      const buyerNotif: AppNotification = {
+        id: `notif_buyer_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`,
+        userId: currentUser.id,
+        title: '✅ Order Confirmed',
+        message: `Your order of ${ord.quantity} cr. of ${ord.cropName} from ${ord.farmerName} is confirmed. Rs. ${ord.totalPrice.toLocaleString()} — truck on its way.`,
+        orderId: ord.orderId,
+        isRead: false,
+        createdAt: new Date().toISOString()
+      };
+      await db.createNotification(buyerNotif);
     }
 
     setOrders((prev) => [...newCreatedOrders, ...prev]);
@@ -352,8 +379,8 @@ export default function App() {
             const notif: AppNotification = {
               id: `notif_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`,
               userId: wholesalerProfile.id,
-              title: 'Order Accepted',
-              message: `Your order ${orderId} for ${updated.quantity} crates of ${updated.cropName} has been accepted by farmer ${updated.farmerName}.`,
+              title: '🚚 Shipment Started',
+              message: `${updated.farmerName} accepted your order — ${updated.quantity} cr. of ${updated.cropName} is now on the truck. Truck: ${updated.vehicleNumber || 'Assigned'}.`,
               orderId: orderId,
               isRead: false,
               createdAt: new Date().toISOString()
@@ -362,6 +389,42 @@ export default function App() {
           }
         } catch (e) {
           console.error('Failed to notify wholesaler on order acceptance', e);
+        }
+      }
+
+      if (status === 'ARRIVED') {
+        try {
+          // Notify wholesaler: delivery done
+          const wholesalerProfile = await db.getProfileByName(updated.wholesalerName);
+          if (wholesalerProfile) {
+            const notif: AppNotification = {
+              id: `notif_arrived_ws_${Date.now()}`,
+              userId: wholesalerProfile.id,
+              title: '📦 Delivery Complete',
+              message: `${updated.quantity} cr. of ${updated.cropName} from ${updated.farmerName} has arrived. Transaction complete — Rs. ${updated.totalPrice.toLocaleString()} settled.`,
+              orderId: orderId,
+              isRead: false,
+              createdAt: new Date().toISOString()
+            };
+            await db.createNotification(notif);
+          }
+
+          // Notify farmer: payment settled
+          const farmerListing = listings.find(l => l.farmerName === updated.farmerName);
+          if (farmerListing) {
+            const farmerNotif: AppNotification = {
+              id: `notif_arrived_fr_${Date.now()}`,
+              userId: farmerListing.farmerId,
+              title: '💰 Payment Received',
+              message: `Delivery of ${updated.quantity} cr. of ${updated.cropName} to ${updated.wholesalerName} is confirmed. Rs. ${updated.totalPrice.toLocaleString()} has been settled.`,
+              orderId: orderId,
+              isRead: false,
+              createdAt: new Date().toISOString()
+            };
+            await db.createNotification(farmerNotif);
+          }
+        } catch (e) {
+          console.error('Failed to send ARRIVED notifications', e);
         }
       }
 
@@ -974,15 +1037,21 @@ export default function App() {
                 >
                   <Bell size={16} />
                   {notifications.some(n => !n.isRead) && (
-                    <span className="w-2 h-2 bg-red-500 rounded-full absolute top-2 right-2 ring-2 ring-white"></span>
+                    <span className="w-2 h-2 bg-red-500 rounded-full absolute top-2 right-2 ring-2 ring-white animate-pulse" />
                   )}
                 </button>
-
-                {/* Notifications Dropdown Panel */}
+                  {/* Notifications Dropdown Panel */}
                 {showNotifDropdown && (
                   <div className="absolute right-0 mt-2 w-80 bg-white border border-neutral-150 rounded-2xl shadow-xl z-50 p-4 space-y-3 max-h-96 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-150">
-                    <div className="flex justify-between items-center border-b border-neutral-50 pb-2">
-                      <span className="text-xs font-black text-neutral-800">Notifications</span>
+                    <div className="flex justify-between items-center border-b border-neutral-100 pb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-black text-neutral-800">Notifications</span>
+                        {notifications.filter(n => !n.isRead).length > 0 && (
+                          <span className="text-[9px] font-black bg-emerald-500 text-white px-1.5 py-0.5 rounded-full">
+                            {notifications.filter(n => !n.isRead).length} new
+                          </span>
+                        )}
+                      </div>
                       {notifications.some(n => !n.isRead) && (
                         <button
                           onClick={async () => {
@@ -993,7 +1062,7 @@ export default function App() {
                             }
                             setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
                           }}
-                          className="text-[10px] text-emerald-600 hover:underline font-bold"
+                          className="text-[10px] text-emerald-600 hover:underline font-bold cursor-pointer"
                         >
                           Mark all read
                         </button>
@@ -1001,11 +1070,12 @@ export default function App() {
                     </div>
 
                     {notifications.length === 0 ? (
-                      <div className="text-center py-6 text-neutral-400 text-xs font-medium">
+                      <div className="text-center py-8 text-neutral-400 text-xs font-medium">
+                        <span className="text-2xl block mb-2">🔔</span>
                         No notifications yet
                       </div>
                     ) : (
-                      <div className="space-y-2.5 divide-y divide-neutral-50">
+                      <div className="space-y-1.5">
                         {notifications.map(n => (
                           <div
                             key={n.id}
@@ -1020,14 +1090,29 @@ export default function App() {
                               }
                               setShowNotifDropdown(false);
                             }}
-                            className={`pt-2.5 text-xs text-left cursor-pointer transition ${n.isRead ? 'opacity-65' : 'font-semibold'}`}
+                            className={`p-2.5 rounded-xl text-xs text-left cursor-pointer transition-all duration-150 border-l-2 ${
+                              n.isRead
+                                ? 'opacity-55 border-transparent bg-transparent hover:bg-neutral-50 hover:opacity-80'
+                                : 'border-emerald-500 bg-emerald-50/70 hover:bg-emerald-50 shadow-sm'
+                            }`}
                           >
-                            <div className="flex justify-between items-start">
-                              <span className="text-[11px] font-bold text-neutral-800 block leading-tight">{n.title}</span>
-                              {!n.isRead && <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0 mt-1"></span>}
+                            <div className="flex justify-between items-start gap-2">
+                              <span className={`text-[11px] font-bold leading-tight block ${n.isRead ? 'text-neutral-600' : 'text-neutral-900'}`}>
+                                {n.title}
+                              </span>
+                              {!n.isRead && <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0 mt-0.5 animate-pulse" />}
                             </div>
-                            <p className="text-[10px] text-neutral-500 mt-1 leading-normal">{n.message}</p>
-                            <span className="text-[8px] text-neutral-400 block mt-1 font-mono">{new Date(n.createdAt).toLocaleTimeString()}</span>
+                            <p className="text-[10px] text-neutral-500 mt-0.5 leading-relaxed">{n.message}</p>
+                            <div className="flex items-center justify-between mt-1.5">
+                              <span className="text-[8px] text-neutral-400 font-mono">
+                                {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                              {n.orderId && (
+                                <span className="text-[8px] text-emerald-600 font-bold uppercase tracking-wider">
+                                  View order →
+                                </span>
+                              )}
+                            </div>
                           </div>
                         ))}
                       </div>
