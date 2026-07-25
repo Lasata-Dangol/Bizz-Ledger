@@ -1247,6 +1247,8 @@ export default function App() {
                               if (n.orderId) {
                                 setSelectedOrderId(n.orderId);
                                 setActiveTab('orders');
+                                // Clear after render so future manual visits don't re-select this order
+                                setTimeout(() => setSelectedOrderId(null), 500);
                               }
                               setShowNotifDropdown(false);
                             }}
