@@ -93,7 +93,6 @@ export default function CartPage({
 
       return {
         orderId: `order_2026_${Math.floor(1000 + Math.random() * 9000 + idx)}`,
-        roomId: `direct_checkout_${Date.now()}_${idx}`,
         listingId: item.listing.id,
         cropName: item.listing.cropName,
         farmerName: item.listing.farmerName,

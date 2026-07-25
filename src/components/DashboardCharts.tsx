@@ -13,23 +13,15 @@ export default function DashboardCharts({ orders, listings }: DashboardChartsPro
     return listings.reduce((sum, list) => sum + list.quantityAvailableCrates, 0);
   }, [listings]);
 
-  // Compute Avg Settlement
-  const avgSettlement = useMemo(() => {
-    if (orders.length === 0) return 0;
-    const totalSpent = orders.reduce((sum, order) => sum + order.totalPrice, 0);
-    const totalCrates = orders.reduce((sum, order) => sum + order.quantity, 0);
-    return totalCrates > 0 ? Math.round(totalSpent / totalCrates) : 0;
-  }, [orders]);
-
   // Compute Bar Data over last 7 days
   const { barData, totalTradeValue, maxVal } = useMemo(() => {
     const today = new Date();
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    
+
     let totalTrade = 0;
     const dailyTotals: Record<number, number> = {};
     const orderedDays: number[] = [];
-    
+
     // Initialize last 7 days
     for (let i = 6; i >= 0; i--) {
       const d = new Date(today);
@@ -37,12 +29,12 @@ export default function DashboardCharts({ orders, listings }: DashboardChartsPro
       dailyTotals[d.getDay()] = 0;
       orderedDays.push(d.getDay());
     }
-    
+
     orders.forEach(order => {
       const orderDate = new Date(order.createdAt);
       const diffTime = today.getTime() - orderDate.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      
+
       if (diffDays <= 7 && diffDays >= 0) {
         const dayOfWeek = orderDate.getDay();
         if (dailyTotals[dayOfWeek] !== undefined) {
@@ -57,11 +49,11 @@ export default function DashboardCharts({ orders, listings }: DashboardChartsPro
     for (const key in dailyTotals) {
       if (dailyTotals[key] > mVal) mVal = dailyTotals[key];
     }
-    
+
     const computedBarData = orderedDays.map(dayOfWeek => {
       const val = dailyTotals[dayOfWeek] || 0;
       const heightPercent = mVal > 0 ? Math.max((val / mVal) * 100, 5) : 5; // Minimum 5% to show an empty bar
-      
+
       return {
         label: days[dayOfWeek],
         value: heightPercent,
@@ -99,10 +91,10 @@ export default function DashboardCharts({ orders, listings }: DashboardChartsPro
 
         {/* Styled Bar Columns and Tooltip */}
         <div className="relative h-48 flex items-end justify-between pt-8 px-4 border-b border-dashed border-neutral-100 mb-2">
-          
+
           {barData.map((bar, i) => (
             <div key={i} className="flex flex-col items-center flex-1 group cursor-pointer relative">
-              
+
               {/* Tooltip hovering on the bar */}
               {bar.highlighted && (
                 <div className="absolute -top-[45px] left-1/2 transform -translate-x-1/2 flex flex-col items-center z-10">
@@ -115,13 +107,12 @@ export default function DashboardCharts({ orders, listings }: DashboardChartsPro
 
               {/* The bar line itself */}
               <div className="relative w-5 xs:w-6 sm:w-8 h-32 flex items-end justify-center rounded-xl bg-neutral-50 group-hover:bg-neutral-100 transition-colors duration-150">
-                <div 
+                <div
                   style={{ height: `${bar.value}%` }}
-                  className={`w-full rounded-b-xl rounded-t-lg transition-all duration-300 ${
-                    bar.highlighted 
-                      ? 'bg-gradient-to-t from-emerald-500 to-[#10b981] shadow-[0_4px_12px_rgba(16,185,129,0.3)]' 
+                  className={`w-full rounded-b-xl rounded-t-lg transition-all duration-300 ${bar.highlighted
+                      ? 'bg-gradient-to-t from-emerald-500 to-[#10b981] shadow-[0_4px_12px_rgba(16,185,129,0.3)]'
                       : 'bg-gradient-to-t from-neutral-200 to-neutral-300 group-hover:from-neutral-300 group-hover:to-neutral-400'
-                  }`}
+                    }`}
                 />
               </div>
               <span className="text-[11px] font-bold text-neutral-400 mt-2 font-mono uppercase tracking-wider group-hover:text-neutral-600 transition duration-150">
@@ -136,7 +127,7 @@ export default function DashboardCharts({ orders, listings }: DashboardChartsPro
       <div className="bg-emerald-50/60 border border-emerald-100 rounded-3xl p-5 shadow-xs flex justify-between items-start">
         <div className="space-y-1">
           <span className="text-xs font-semibold text-emerald-800 uppercase tracking-wider">Market Inflow</span>
-          <div className="text-2xl font-black text-emerald-950">{marketInflow > 1000 ? `${(marketInflow/1000).toFixed(1)}k` : marketInflow} Crates</div>
+          <div className="text-2xl font-black text-emerald-950">{marketInflow > 1000 ? `${(marketInflow / 1000).toFixed(1)}k` : marketInflow} Crates</div>
           <p className="text-xs text-emerald-700">Ready at transit hubs today</p>
         </div>
         <div className="bg-emerald-500 text-white p-2.5 rounded-2xl shadow-sm">

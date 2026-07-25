@@ -13,13 +13,17 @@ interface InventoryPageProps {
 export default function InventoryPage({ listings, onAddListing, onEditListing, onDeleteListing, currentUser }: InventoryPageProps) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [cropName, setCropName] = useState('Tomato (Local)');
+  const [cropNameCustom, setCropNameCustom] = useState('');
+  const [isOtherCrop, setIsOtherCrop] = useState(false);
   const [category, setCategory] = useState<'Tomatoes' | 'Cabbages' | 'Greens' | 'Potatoes' | 'Squash' | 'Other'>('Tomatoes');
   const [district, setDistrict] = useState('Panchkhal, Kavre');
+  const [districtCustom, setDistrictCustom] = useState('');
+  const [isOtherDistrict, setIsOtherDistrict] = useState(false);
   const [crates, setCrates] = useState(60);
   const [priceVal, setPriceVal] = useState(1400);
   const [readyShip, setReadyShip] = useState(true);
   const [notes, setNotes] = useState('');
-  const [imageUrl, setImageUrl] = useState('https://images.unsplash.com/photo-1595855759920-86582396756a?w=400&auto=format&fit=crop&q=80');
+  const [imageUrl, setImageUrl] = useState('https://images.unsplash.com/photo-1546094096-0df4bcaaa337?w=400&auto=format&fit=crop&q=80');
   const [editingId, setEditingId] = useState<string | null>(null);
 
   // Filter listings belonging to current logged-in farmer
@@ -28,19 +32,43 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
   const handleOpenAddModal = () => {
     setEditingId(null);
     setCropName('Tomato (Local)');
+    setCropNameCustom('');
+    setIsOtherCrop(false);
     setCategory('Tomatoes');
+    setDistrict('Panchkhal, Kavre');
+    setDistrictCustom('');
+    setIsOtherDistrict(false);
     setCrates(60);
     setPriceVal(1400);
     setReadyShip(true);
     setNotes('');
+    setImageUrl('https://images.unsplash.com/photo-1546094096-0df4bcaaa337?w=400&auto=format&fit=crop&q=80');
     setShowAddModal(true);
   };
 
   const handleOpenEditModal = (listing: VegetableListing) => {
     setEditingId(listing.id);
-    setCropName(listing.cropName);
+    const knownCrops = ['Tomato (Local)', 'Potatoes', 'Cabbage', 'Cauliflower (Local)'];
+    if (knownCrops.includes(listing.cropName)) {
+      setCropName(listing.cropName);
+      setIsOtherCrop(false);
+      setCropNameCustom('');
+    } else {
+      setCropName('Other');
+      setIsOtherCrop(true);
+      setCropNameCustom(listing.cropName);
+    }
     setCategory(listing.category as any);
-    setDistrict(listing.district);
+    const knownDistricts = ['Panchkhal, Kavre', 'Benighat, Dhading', 'Palung, Makwanpur'];
+    if (knownDistricts.includes(listing.district)) {
+      setDistrict(listing.district);
+      setIsOtherDistrict(false);
+      setDistrictCustom('');
+    } else {
+      setDistrict('Other');
+      setIsOtherDistrict(true);
+      setDistrictCustom(listing.district);
+    }
     setCrates(listing.quantityAvailableCrates);
     setPriceVal(listing.pricePerCrate);
     setReadyShip(listing.readyToShip);
@@ -51,10 +79,11 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const finalCropName = isOtherCrop ? cropNameCustom.trim() : cropName;
     const listingData = {
-      cropName,
+      cropName: finalCropName,
       category,
-      district,
+      district: isOtherDistrict ? districtCustom.trim() : district,
       quantityAvailableCrates: crates,
       pricePerCrate: priceVal,
       harvestDate: new Date().toISOString().split('T')[0],
@@ -68,16 +97,20 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
     } else {
       onAddListing(listingData);
     }
-
+    
     setShowAddModal(false);
     setNotes('');
     setEditingId(null);
+    setIsOtherCrop(false);
+    setCropNameCustom('');
+    setIsOtherDistrict(false);
+    setDistrictCustom('');
   };
 
   const imageOptions = [
-    { label: 'Red Tomatoes', value: 'https://images.unsplash.com/photo-1595855759920-86582396756a?w=400&auto=format&fit=crop&q=80' },
-    { label: 'Red Potatoes', value: 'https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=400&auto=format&fit=crop&q=80' },
-    { label: 'Crispy Cabbage', value: 'https://images.unsplash.com/photo-1550142414-ac6200fa53f4?w=400&auto=format&fit=crop&q=80' },
+    { label: 'Tomatoes', value: 'https://images.unsplash.com/photo-1546094096-0df4bcaaa337?w=400&auto=format&fit=crop&q=80' },
+    { label: 'Potatoes', value: 'https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=400&auto=format&fit=crop&q=80' },
+    { label: 'Cabbage', value: 'https://images.unsplash.com/photo-1594282486552-05b4d80fbb9f?w=400&auto=format&fit=crop&q=80' },
     { label: 'Local Cauliflower', value: 'https://images.unsplash.com/photo-1568584711075-3d021a7c3ca3?w=400&auto=format&fit=crop&q=80' },
   ];
 
@@ -89,7 +122,7 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
           <p className="text-xs text-neutral-500">See how many crates you have, add new crops, or change your prices.</p>
         </div>
 
-        <button
+        <button 
           onClick={handleOpenAddModal}
           className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-5 rounded-2xl flex items-center gap-2 text-xs cursor-pointer shadow-md transition duration-200"
         >
@@ -112,12 +145,6 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
             {myListings.reduce((sum, item) => sum + item.quantityAvailableCrates, 0)} <span className="text-sm font-semibold">Crates</span>
           </div>
           <p className="text-xs text-neutral-500">Ready for sale or pickup</p>
-        </div>
-
-        <div className="bg-white border border-neutral-100 p-6 rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.01)] space-y-2">
-          <span className="text-xs font-bold text-neutral-400 uppercase tracking-widest font-mono">Agreed Payments</span>
-          <div className="text-3xl font-black text-amber-500">Rs. 84,500</div>
-          <p className="text-xs text-neutral-500">Bargains agreed, waiting for pickup trucks</p>
         </div>
       </div>
 
@@ -151,9 +178,9 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
                 {myListings.map(item => (
                   <tr key={item.id} className="hover:bg-neutral-50/50 transition duration-150">
                     <td className="py-4 px-2 flex items-center gap-2.5">
-                      <img
-                        src={item.imageUrl}
-                        alt={item.cropName}
+                      <img 
+                        src={item.imageUrl} 
+                        alt={item.cropName} 
                         className="w-9 h-9 rounded-lg object-cover"
                         referrerPolicy="no-referrer"
                       />
@@ -168,23 +195,24 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
                     </td>
                     <td className="py-4 px-2 text-emerald-600 font-black">Rs. {item.pricePerCrate} / Cr</td>
                     <td className="py-4 px-2">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold ${item.readyToShip
-                          ? 'bg-emerald-50 text-emerald-700'
+                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                        item.readyToShip 
+                          ? 'bg-emerald-50 text-emerald-700' 
                           : 'bg-amber-50 text-amber-700'
-                        }`}>
+                      }`}>
                         <span className={`h-1.5 w-1.5 rounded-full ${item.readyToShip ? 'bg-emerald-500' : 'bg-amber-400'}`}></span>
                         {item.readyToShip ? 'Ready for pickup' : 'Growing in Field'}
                       </span>
                     </td>
                     <td className="py-4 px-2 text-right space-x-2">
-                      <button
+                      <button 
                         onClick={() => handleOpenEditModal(item)}
                         className="p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-emerald-600 rounded-lg transition"
                         title="Edit Listing"
                       >
                         <Edit2 size={16} />
                       </button>
-                      <button
+                      <button 
                         onClick={() => onDeleteListing && onDeleteListing(item.id)}
                         className="p-1.5 text-neutral-500 hover:bg-red-50 hover:text-red-600 rounded-lg transition"
                         title="Delete Listing"
@@ -209,7 +237,7 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
                 <span className="text-[10px] font-bold font-mono text-emerald-600 tracking-wider uppercase block">BizzLedger Growers Group</span>
                 <h3 className="text-xl font-bold text-neutral-900">{editingId ? 'Edit Vegetable Crop' : 'List New Vegetable Crop'}</h3>
               </div>
-              <button
+              <button 
                 onClick={() => setShowAddModal(false)}
                 className="text-neutral-400 hover:text-neutral-600 text-xl font-bold font-mono px-2 py-1 bg-neutral-100 rounded-lg"
               >
@@ -218,69 +246,102 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Crop select */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-neutral-600 block">Vegetable Crop Name</label>
-                  <select
-                    value={cropName}
-                    onChange={(e) => {
-                      setCropName(e.target.value);
-                      if (e.target.value === 'Potato (Red)') {
+              {/* Crop select */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-neutral-600 block">Vegetable Crop Name</label>
+                <select 
+                  value={isOtherCrop ? 'Other' : cropName}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === 'Other') {
+                      setIsOtherCrop(true);
+                      setCropName('Other');
+                      setCategory('Other');
+                    } else {
+                      setIsOtherCrop(false);
+                      setCropName(val);
+                      if (val === 'Potatoes') {
                         setCategory('Potatoes');
                         setImageUrl('https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=400&auto=format&fit=crop&q=80');
-                      } else if (e.target.value === 'Cabbage') {
+                      } else if (val === 'Cabbage') {
                         setCategory('Cabbages');
                         setImageUrl('https://images.unsplash.com/photo-1550142414-ac6200fa53f4?w=400&auto=format&fit=crop&q=80');
-                      } else if (e.target.value === 'Cauliflower (Local)') {
+                      } else if (val === 'Cauliflower (Local)') {
                         setCategory('Cabbages');
                         setImageUrl('https://images.unsplash.com/photo-1568584711075-3d021a7c3ca3?w=400&auto=format&fit=crop&q=80');
                       } else {
                         setCategory('Tomatoes');
                         setImageUrl('https://images.unsplash.com/photo-1595855759920-86582396756a?w=400&auto=format&fit=crop&q=80');
                       }
-                    }}
-                    className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-semibold focus:outline-hidden"
-                  >
-                    <option>Tomato (Local)</option>
-                    <option>Potato (Red)</option>
-                    <option>Cabbage</option>
-                    <option>Cauliflower (Local)</option>
-                  </select>
-                </div>
+                    }
+                  }}
+                  className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-semibold focus:outline-hidden"
+                >
+                  <option>Tomato (Local)</option>
+                  <option>Potatoes</option>
+                  <option>Cabbage</option>
+                  <option>Cauliflower (Local)</option>
+                  <option>Other</option>
+                </select>
+              </div>
 
-                {/* Category select */}
+              {isOtherCrop && (
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-neutral-600 block">Vegetable Type</label>
-                  <input
-                    type="text"
-                    readOnly
-                    value={category}
-                    className="w-full p-3 bg-neutral-150/40 text-neutral-500 border border-neutral-200 rounded-xl text-xs font-semibold"
+                  <label className="text-xs font-bold text-neutral-600 block">Custom Crop Name</label>
+                  <input 
+                    type="text" 
+                    value={cropNameCustom}
+                    onChange={(e) => setCropNameCustom(e.target.value)}
+                    placeholder="Enter crop name"
+                    className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-semibold focus:outline-hidden"
+                    required
                   />
                 </div>
-              </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* District location setup */}
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 flex-1">
                   <label className="text-xs font-bold text-neutral-600 block">Farming District</label>
-                  <select
-                    value={district}
-                    onChange={(e) => setDistrict(e.target.value)}
+                  <select 
+                    value={isOtherDistrict ? 'Other' : district}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === 'Other') {
+                        setIsOtherDistrict(true);
+                        setDistrict('Other');
+                      } else {
+                        setIsOtherDistrict(false);
+                        setDistrict(val);
+                      }
+                    }}
                     className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-semibold focus:outline-hidden"
                   >
                     <option>Panchkhal, Kavre</option>
                     <option>Benighat, Dhading</option>
                     <option>Palung, Makwanpur</option>
+                    <option>Other</option>
                   </select>
                 </div>
+                {isOtherDistrict && (
+                  <div className="space-y-1.5 flex-1">
+                    <label className="text-xs font-bold text-neutral-600 block">Custom District Name</label>
+                    <input 
+                      type="text" 
+                      value={districtCustom}
+                      onChange={(e) => setDistrictCustom(e.target.value)}
+                      placeholder="Enter district name"
+                      className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-semibold focus:outline-hidden"
+                      required
+                    />
+                  </div>
+                )}
 
                 {/* Available volume select */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-neutral-600 block">How many crates available?</label>
-                  <input
-                    type="number"
+                  <input 
+                    type="number" 
                     min={5}
                     value={crates}
                     onChange={(e) => setCrates(Number(e.target.value))}
@@ -292,7 +353,7 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
               {/* Single Price Input */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-neutral-600 block">Price per Crate (Rs.)</label>
-                <input
+                <input 
                   type="number"
                   min={100}
                   value={priceVal}
@@ -303,9 +364,9 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
 
               {/* Shipment status checklist */}
               <div className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  id="readyShipBox"
+                <input 
+                  type="checkbox" 
+                  id="readyShipBox" 
                   checked={readyShip}
                   onChange={(e) => setReadyShip(e.target.checked)}
                   className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 rounded border-neutral-300 pointer-events-auto cursor-pointer"
@@ -324,8 +385,9 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
                       key={i}
                       type="button"
                       onClick={() => setImageUrl(opt.value)}
-                      className={`p-1 border rounded-lg overflow-hidden transition ${imageUrl === opt.value ? 'border-emerald-600 bg-emerald-50/20' : 'border-neutral-200 opacity-60'
-                        }`}
+                      className={`p-1 border rounded-lg overflow-hidden transition ${
+                        imageUrl === opt.value ? 'border-emerald-600 bg-emerald-50/20' : 'border-neutral-200 opacity-60'
+                      }`}
                     >
                       <img src={opt.value} alt={opt.label} className="w-full h-8 object-cover rounded-md" referrerPolicy="no-referrer" />
                       <span className="text-[8px] text-center block mt-1 line-clamp-1 font-semibold text-neutral-600">{opt.label}</span>
@@ -343,8 +405,8 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
               {/* Custom Image Upload */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-neutral-600 block">Or Upload Your Own Photo</label>
-                <input
-                  type="file"
+                <input 
+                  type="file" 
                   accept="image/*"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
@@ -363,7 +425,7 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
               {/* Notes */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-neutral-600 block">Notes/Description (Optional)</label>
-                <textarea
+                <textarea 
                   rows={2}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
@@ -374,14 +436,14 @@ export default function InventoryPage({ listings, onAddListing, onEditListing, o
 
               {/* Actions */}
               <div className="flex gap-3 pt-2">
-                <button
+                <button 
                   type="button"
                   onClick={() => setShowAddModal(false)}
                   className="flex-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-bold py-3 px-4 rounded-xl text-xs cursor-pointer"
                 >
                   Cancel
                 </button>
-                <button
+                <button 
                   type="submit"
                   className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl text-xs cursor-pointer shadow-sm"
                 >

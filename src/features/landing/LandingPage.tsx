@@ -184,9 +184,9 @@ export default function LandingPage({ onLogin, kalimatiRates }: LandingPageProps
               <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
                 <Users2 size={24} />
               </div>
-              <h3 className="text-lg font-bold text-neutral-800">Direct Sourcing Channel</h3>
+              <h3 className="text-lg font-bold text-neutral-800">Direct Sourcing Hub</h3>
               <p className="text-xs text-neutral-500 leading-relaxed">
-                Add crops directly to your digital basket. Complete checkout at the farmer's listed rate without middlemen delays.
+                Farmers list their crops and buyers purchase directly. Select item amount, verify details, and checkout easily.
               </p>
             </div>
 
@@ -206,7 +206,7 @@ export default function LandingPage({ onLogin, kalimatiRates }: LandingPageProps
               </div>
               <h3 className="text-lg font-bold text-neutral-800">Daily Kalimati Market Price</h3>
               <p className="text-xs text-neutral-500 leading-relaxed">
-                Compare farm prices with Kathmandu Kalimati prices. This helps you verify market rates and buy at the right price.
+                Compare farm prices with Kathmandu Kalimati prices. This helps you buy at the right rate.
               </p>
             </div>
           </div>
@@ -243,7 +243,7 @@ export default function LandingPage({ onLogin, kalimatiRates }: LandingPageProps
           <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 pb-2 border-b border-neutral-100">
             <div>
               <span className="font-bold text-neutral-800 block text-sm">Daily Kalimati Market Prices</span>
-              <span className="text-[10px] text-neutral-400">Compare these prices to verify fair farm rates</span>
+              <span className="text-[10px] text-neutral-400">Compare these prices to source fairly from farmers</span>
             </div>
             <div className="flex items-center gap-3">
               <input

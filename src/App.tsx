@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { UserProfile, VegetableListing, Order, AppNotification, KalimatiRate } from './types';
+import { UserProfile, VegetableListing, Order, UserRole, KalimatiRate, AppNotification } from './types';
 import { MOCK_USERS, KALIMATI_RATES } from './mockData';
 import { db, isSupabaseConfigured, supabase } from './lib/supabase';
 import KalimatiTicker from './components/KalimatiTicker';
@@ -73,6 +73,9 @@ export default function App() {
 
   const [viewedProfile, setViewedProfile] = useState<UserProfile | null>(null);
 
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
 
   const [showRoleSelector, setShowRoleSelector] = useState(false);
@@ -242,7 +245,6 @@ export default function App() {
     const newCreatedOrders: Order[] = checkoutItems.map((item, idx) => {
       return {
         orderId: `order_2026_${Math.floor(1000 + Math.random() * 9000 + idx)}`,
-        roomId: `direct_checkout_${Date.now()}_${idx}`,
         listingId: item.listing.id,
         cropName: item.listing.cropName,
         farmerName: item.listing.farmerName,
@@ -313,6 +315,8 @@ export default function App() {
       setListings(listings.filter(l => l.id !== id));
     }
   };
+
+
 
 
   const handleUpdateOrderStatus = async (orderId: string, status: 'PROCESSING' | 'IN_TRANSIT' | 'ARRIVED') => {
@@ -424,7 +428,7 @@ export default function App() {
               Namaskar, {currentUser.name}
             </h2>
             <p className="text-xs text-neutral-500 max-w-lg">
-              Buy fresh crops directly from village farmers. Easy to chat and bargain prices with them.
+              Buy fresh crops directly from village farmers at fair wholesale prices.
             </p>
           </div>
 

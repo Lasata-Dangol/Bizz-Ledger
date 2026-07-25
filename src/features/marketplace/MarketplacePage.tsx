@@ -13,7 +13,6 @@ export default function MarketplacePage({ listings, onAddToCart, currentUser, on
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDistrict, setSelectedDistrict] = useState('All');
   const [selectedCategory, setSelectedCategory] = useState('All');
-  
 
   // Extract unique districts and categories
   const districts = ['All', 'Panchkhal, Kavre', 'Benighat, Dhading', 'Palung, Makwanpur'];
@@ -27,7 +26,6 @@ export default function MarketplacePage({ listings, onAddToCart, currentUser, on
     const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
     return matchesSearch && matchesDistrict && matchesCategory;
   });
-
 
   return (
     <div className="space-y-6">

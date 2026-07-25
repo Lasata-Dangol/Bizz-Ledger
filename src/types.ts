@@ -53,7 +53,6 @@ export interface VegetableListing {
 
 export interface Order {
   orderId: string;
-  roomId: string;
   listingId: string;
   cropName: string;
   farmerName: string;
