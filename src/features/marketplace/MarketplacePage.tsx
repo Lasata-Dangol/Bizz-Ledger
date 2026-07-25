@@ -275,10 +275,15 @@ export default function MarketplacePage({ listings, onAddToCart, currentUser, on
                   {currentUser.role === 'WHOLESALER' ? (
                     <button 
                       onClick={() => onAddToCart && onAddToCart(item)}
-                      className="w-full flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs cursor-pointer hover:shadow-xs transition duration-150"
+                      disabled={item.quantityAvailableCrates === 0}
+                      className={`w-full flex items-center justify-center gap-1.5 font-bold py-2.5 px-3 rounded-xl text-xs transition duration-150 ${
+                        item.quantityAvailableCrates === 0
+                          ? 'bg-neutral-200 text-neutral-500 cursor-not-allowed'
+                          : 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer hover:shadow-xs'
+                      }`}
                     >
                       <ShoppingCart size={13} />
-                      Add to Basket
+                      {item.quantityAvailableCrates === 0 ? 'Sold out' : 'Add to Basket'}
                     </button>
                   ) : null}
                 </div>
