@@ -296,8 +296,28 @@ export default function App() {
     };
     const saved = await db.createListing(fullListing);
     setListings([...listings, saved]);
+
+    // Notify all wholesalers that a new crop is available
+    try {
+      const allProfiles = await db.getAllProfiles();
+      const wholesalers = allProfiles.filter(p => p.role === 'WHOLESALER');
+      for (const ws of wholesalers) {
+        await db.createNotification({
+          id: `notif_crop_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`,
+          userId: ws.id,
+          title: 'New Crop Available',
+          message: `${currentUser.name} just listed ${newListing.quantityAvailableCrates} crates of ${newListing.cropName} from ${newListing.district} at Rs. ${newListing.pricePerCrate}/crate.`,
+          isRead: false,
+          createdAt: new Date().toISOString(),
+        });
+      }
+    } catch (e) {
+      console.warn('Failed to send new-crop notifications', e);
+    }
+
     alert("New crop listed in marketplace!");
   };
+
 
   const handleEditListing = async (id: string, updated: Partial<VegetableListing>) => {
     const existing = listings.find(l => l.id === id);

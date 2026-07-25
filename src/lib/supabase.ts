@@ -71,6 +71,20 @@ class DirectLedgerDb {
     return profile;
   }
 
+  async getAllProfiles(): Promise<UserProfile[]> {
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*');
+        if (!error && data) return data as UserProfile[];
+      } catch (e) {
+        console.warn('Supabase getAllProfiles failed, falling back to local storage', e);
+      }
+    }
+    return this.getLocalList<UserProfile>('profiles', MOCK_USERS);
+  }
+
   // Listing Operations
   async getListings(): Promise<VegetableListing[]> {
     if (supabase) {
