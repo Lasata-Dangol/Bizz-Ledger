@@ -50,9 +50,9 @@ export default function App() {
     return saved === 'true';
   });
 
-  const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
     const saved = localStorage.getItem('bl_current_user');
-    return saved ? JSON.parse(saved) : MOCK_USERS[2]; // Default
+    return saved ? JSON.parse(saved) : null;
   });
 
   const [listings, setListings] = useState<VegetableListing[]>([]);
@@ -677,18 +677,13 @@ export default function App() {
     );
   };
 
-  if (!isLoggedIn) {
+  if (!isLoggedIn || !currentUser) {
     return (
       <LandingPage
         kalimatiRates={kalimatiRates}
         onLogin={(user) => {
           setCurrentUser(user);
           setIsLoggedIn(true);
-          // Pre-populate mock users as already onboarded so quick login is smooth
-          const isMockUser = MOCK_USERS.some(m => m.id === user.id);
-          if (isMockUser) {
-            user.isOnboarded = true;
-          }
           if (user.isOnboarded) {
             if (user.role === 'FARMER') {
               setActiveTab('inventory');
@@ -705,7 +700,7 @@ export default function App() {
   }
 
   // Intercept for complete account onboarding details
-  if (isLoggedIn && currentUser && currentUser.isOnboarded === false) {
+  if (currentUser.isOnboarded === false) {
     return (
       <OnboardingPage
         currentUser={currentUser}

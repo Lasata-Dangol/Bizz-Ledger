@@ -113,8 +113,8 @@ export default function MarketplacePage({ listings, onAddToCart, currentUser, on
                           <span className="text-xs text-neutral-500">{listing.farmerName} • {listing.district}</span>
                         </div>
                         <div className="flex flex-col items-end">
-                          <span className="font-bold text-emerald-600">Rs. {listing.pricePerKg}/kg</span>
-                          <span className="text-xs text-neutral-500">{listing.volumeKg} kg</span>
+                          <span className="font-bold text-emerald-600">Rs. {listing.pricePerCrate / 20}/kg</span>
+                          <span className="text-xs text-neutral-500">{listing.quantityAvailableCrates * 20} kg</span>
                         </div>
                       </div>
                     ))
