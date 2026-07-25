@@ -291,7 +291,9 @@ export default function App() {
         listingId: item.listing.id,
         cropName: item.listing.cropName,
         farmerName: item.listing.farmerName,
+        farmerId: item.listing.farmerId,
         wholesalerName: currentUser.name,
+        wholesalerId: currentUser.id,
         finalPricePerCrate: item.listing.pricePerCrate,
         quantity: item.quantity,
         totalPrice: item.listing.pricePerCrate * item.quantity,
@@ -328,19 +330,19 @@ export default function App() {
           createdAt: new Date().toISOString()
         };
         await db.createNotification(farmerNotif);
-      }
 
-      // Notify buyer: transaction confirmed
-      const buyerNotif: AppNotification = {
-        id: `notif_buyer_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`,
-        userId: currentUser.id,
-        title: '✅ Order Confirmed',
-        message: `Your order of ${ord.quantity} cr. of ${ord.cropName} from ${ord.farmerName} is confirmed. Rs. ${ord.totalPrice.toLocaleString()} — truck on its way.`,
-        orderId: ord.orderId,
-        isRead: false,
-        createdAt: new Date().toISOString()
-      };
-      await db.createNotification(buyerNotif);
+        // Notify buyer: transaction confirmed
+        const buyerNotif: AppNotification = {
+          id: `notif_${Date.now()}_buyer_${Math.floor(1000 + Math.random() * 9000)}`,
+          userId: currentUser.id,
+          title: '🛒 Order Placed',
+          message: `Your order for ${ord.quantity} crates of ${ord.cropName} has been placed. Waiting for farmer confirmation. Total: Rs. ${ord.totalPrice.toLocaleString()}.`,
+          orderId: ord.orderId,
+          isRead: false,
+          createdAt: new Date().toISOString()
+        };
+        await db.createNotification(buyerNotif);
+      }
     }
 
     setOrders((prev) => [...newCreatedOrders, ...prev]);
@@ -405,6 +407,8 @@ export default function App() {
 
 
   const handleUpdateOrderStatus = async (orderId: string, status: 'PROCESSING' | 'IN_TRANSIT' | 'ARRIVED') => {
+    // Grab order from current state BEFORE update so we retain wholesalerId
+    const existingOrder = orders.find(o => o.orderId === orderId);
     const updated = await db.updateOrderStatus(orderId, status);
     if (updated) {
       setOrders((prev) =>
@@ -413,18 +417,26 @@ export default function App() {
 
       if (status === 'IN_TRANSIT') {
         try {
-          const wholesalerProfile = await db.getProfileByName(updated.wholesalerName);
-          if (wholesalerProfile) {
+          // Prefer wholesalerId from state order > updated order > name lookup
+          const wId =
+            existingOrder?.wholesalerId ||
+            updated.wholesalerId ||
+            (await db.getProfileByName(updated.wholesalerName))?.id;
+          console.log('[NotifDebug] IN_TRANSIT — wId:', wId, 'wholesalerName:', updated.wholesalerName);
+          if (wId) {
             const notif: AppNotification = {
               id: `notif_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`,
-              userId: wholesalerProfile.id,
-              title: '🚚 Shipment Started',
-              message: `${updated.farmerName} accepted your order — ${updated.quantity} cr. of ${updated.cropName} is now on the truck. Truck: ${updated.vehicleNumber || 'Assigned'}.`,
+              userId: wId,
+              title: '✅ Order Confirmed',
+              message: `${updated.farmerName} has confirmed your order. ${updated.quantity} cr. of ${updated.cropName} is now on the truck. Truck: ${updated.vehicleNumber || 'Assigned'}.`,
               orderId: orderId,
               isRead: false,
               createdAt: new Date().toISOString()
             };
             await db.createNotification(notif);
+            console.log('[NotifDebug] Notification created for wId:', wId);
+          } else {
+            console.warn('[NotifDebug] Could not resolve wholesaler ID — notification NOT sent');
           }
         } catch (e) {
           console.error('Failed to notify wholesaler on order acceptance', e);
@@ -434,11 +446,14 @@ export default function App() {
       if (status === 'ARRIVED') {
         try {
           // Notify wholesaler: delivery done
-          const wholesalerProfile = await db.getProfileByName(updated.wholesalerName);
-          if (wholesalerProfile) {
+          const wId =
+            existingOrder?.wholesalerId ||
+            updated.wholesalerId ||
+            (await db.getProfileByName(updated.wholesalerName))?.id;
+          if (wId) {
             const notif: AppNotification = {
               id: `notif_arrived_ws_${Date.now()}`,
-              userId: wholesalerProfile.id,
+              userId: wId,
               title: '📦 Delivery Complete',
               message: `${updated.quantity} cr. of ${updated.cropName} from ${updated.farmerName} has arrived. Transaction complete — Rs. ${updated.totalPrice.toLocaleString()} settled.`,
               orderId: orderId,

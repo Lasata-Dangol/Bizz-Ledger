@@ -56,7 +56,9 @@ export interface Order {
   listingId: string;
   cropName: string;
   farmerName: string;
+  farmerId?: string;
   wholesalerName: string;
+  wholesalerId?: string;
   finalPricePerCrate: number;
   quantity: number;
   totalPrice: number;
