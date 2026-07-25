@@ -342,6 +342,20 @@ class DirectLedgerDb {
     const list = this.getLocalList<AppNotification>('notifications', []);
     list.unshift(notification);
     this.setLocalList('notifications', list);
+    // Notify other open tabs (e.g. the farmer's tab) that new notifications are available.
+    // The native `storage` event only fires in tabs OTHER than the one that wrote,
+    // so this is the perfect cross-tab delivery mechanism.
+    try {
+      window.dispatchEvent(
+        new StorageEvent('storage', {
+          key: this.localKey('notifications'),
+          newValue: JSON.stringify(list),
+          storageArea: localStorage,
+        })
+      );
+    } catch {
+      // dispatchEvent is not available in SSR / test environments – ignore
+    }
     return notification;
   }
 

@@ -187,6 +187,25 @@ export default function App() {
     return () => clearInterval(interval);
   }, [isLoggedIn, currentUser?.id]);
 
+  // Cross-tab notification sync: when the wholesaler's tab writes a new notification to
+  // localStorage, the browser fires a `storage` event in every OTHER open tab.
+  // This lets the farmer's tab instantly pick up purchase alerts without waiting for the poll.
+  useEffect(() => {
+    if (!isLoggedIn || !currentUser) return;
+    const handleStorageEvent = async (event: StorageEvent) => {
+      if (event.key === `bizzledger_db_notifications`) {
+        try {
+          const fetchedNotifs = await db.getNotifications(currentUser.id);
+          setNotifications(fetchedNotifs);
+        } catch {
+          // silent fail
+        }
+      }
+    };
+    window.addEventListener('storage', handleStorageEvent);
+    return () => window.removeEventListener('storage', handleStorageEvent);
+  }, [isLoggedIn, currentUser?.id]);
+
   // Sync session states
   useEffect(() => {
     localStorage.setItem('bl_logged_in', String(isLoggedIn));
