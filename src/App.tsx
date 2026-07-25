@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { UserProfile, VegetableListing, BargainRoom, Order, UserRole, BargainMessage, KalimatiRate } from './types';
+import { UserProfile, VegetableListing, Order, AppNotification, KalimatiRate } from './types';
 import { MOCK_USERS, KALIMATI_RATES } from './mockData';
 import { db, isSupabaseConfigured, supabase } from './lib/supabase';
 import KalimatiTicker from './components/KalimatiTicker';
@@ -73,15 +73,13 @@ export default function App() {
 
   const [viewedProfile, setViewedProfile] = useState<UserProfile | null>(null);
 
-  const [activeRoomId, setActiveRoomId] = useState<string | null>(() => {
-    const saved = localStorage.getItem('bl_active_room_id');
-    return saved || null;
-  });
+
 
   const [showRoleSelector, setShowRoleSelector] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showNotificationCount, setShowNotificationCount] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
 
   // Load datasets dynamically from Supabase direct database adapter
   useEffect(() => {
@@ -316,153 +314,6 @@ export default function App() {
     }
   };
 
-  const handleStartNegotiation = async (listing: VegetableListing, initialOffer: number, quantity: number) => {
-    // Check if room with this listing and this wholesaler already exists
-    const existing = rooms.find(r => r.listingId === listing.id && r.wholesalerId === currentUser.id);
-    if (existing) {
-      setActiveRoomId(existing.roomId);
-      setActiveTab('bargain');
-      return;
-    }
-
-    // Create a new room
-    const newRoomId = `room_${Date.now()}`;
-    const newRoom: BargainRoom = {
-      roomId: newRoomId,
-      listingId: listing.id,
-      cropName: listing.cropName,
-      district: listing.district,
-      farmerId: listing.farmerId,
-      farmerName: listing.farmerName,
-      wholesalerId: currentUser.id,
-      wholesalerName: currentUser.name,
-      status: 'NEGOTIATING',
-      messages: [
-        {
-          messageId: `msg_${Date.now()}`,
-          senderId: currentUser.id,
-          senderName: currentUser.name,
-          senderRole: currentUser.role,
-          type: 'OFFER_SUBMITTED',
-          pricePerCrate: initialOffer,
-          quantityRequested: quantity,
-          text: `Namaskar, we proposed an initial bargaining price of Rs. ${initialOffer} for ${quantity} crates. Let us negotiate terms!`,
-          timestamp: new Date().toISOString(),
-        }
-      ]
-    };
-
-    const createdRoom = await db.createBargainRoom(newRoom);
-    setRooms((prev) => [createdRoom, ...prev]);
-    setActiveRoomId(newRoomId);
-    setActiveTab('bargain');
-  };
-
-  const handleSendMessage = async (roomId: string, messageFields: Omit<BargainMessage, 'messageId' | 'timestamp'>) => {
-    const msgSeed: BargainMessage = {
-      ...messageFields,
-      messageId: `msg_${Date.now()}`,
-      timestamp: new Date().toISOString()
-    };
-
-    await db.addBargainMessage(roomId, msgSeed);
-
-    setRooms((prevRooms) =>
-      prevRooms.map((r) => {
-        if (r.roomId === roomId) {
-          return {
-            ...r,
-            messages: [...r.messages, msgSeed]
-          };
-        }
-        return r;
-      })
-    );
-  };
-
-  const handleAcceptContract = async (roomId: string, finalPrice: number, quantity: number) => {
-    await db.updateRoomStatus(roomId, 'COMPLETED');
-
-    const statusMsg: BargainMessage = {
-      messageId: `msg_contract_${Date.now()}`,
-      senderId: 'admin_sys',
-      senderName: 'BizzLedger Desk',
-      senderRole: 'ADMIN',
-      type: 'ACCEPTED_CONTRACT',
-      pricePerCrate: finalPrice,
-      quantityRequested: quantity,
-      text: `🔒 Transaction Locked Immutable: Agreed settle rate is Rs. ${finalPrice} for ${quantity} crates! Dispatching vehicle manifest.`,
-      timestamp: new Date().toISOString()
-    };
-
-    await db.addBargainMessage(roomId, statusMsg);
-
-    setRooms((prevRooms) =>
-      prevRooms.map((r) => {
-        if (r.roomId === roomId) {
-          return {
-            ...r,
-            status: 'COMPLETED',
-            messages: [...r.messages, statusMsg]
-          };
-        }
-        return r;
-      })
-    );
-
-    // Auto spawn a new order
-    const matchedRoom = rooms.find(r => r.roomId === roomId);
-    if (matchedRoom) {
-      const newOrder: Order = {
-        orderId: `order_2026_${Math.floor(1000 + Math.random() * 9000)}`,
-        roomId,
-        listingId: matchedRoom.listingId,
-        cropName: matchedRoom.cropName,
-        farmerName: matchedRoom.farmerName,
-        wholesalerName: matchedRoom.wholesalerName,
-        finalPricePerCrate: finalPrice,
-        quantity,
-        totalPrice: finalPrice * quantity,
-        status: 'PROCESSING',
-        vehicleNumber: `BA 3 KHA ${Math.floor(1000 + Math.random() * 9000)}`,
-        driverPhone: '+977-98' + Math.floor(10000000 + Math.random() * 90000000).toString(),
-        createdAt: new Date().toISOString(),
-        estimatedArrival: new Date(Date.now() + 8 * 3600 * 1000).toISOString(), // 8 hours later
-      };
-
-      await db.createOrder(newOrder);
-      setOrders((prev) => [newOrder, ...prev]);
-    }
-  };
-
-  const handleWithdrawBargain = async (roomId: string) => {
-    await db.updateRoomStatus(roomId, 'WITHDRAWN');
-
-    const statusMsg: BargainMessage = {
-      messageId: `msg_withdraw_${Date.now()}`,
-      senderId: currentUser.id,
-      senderName: currentUser.name,
-      senderRole: currentUser.role,
-      type: 'WITHDRAWN',
-      text: 'Negotiation was withdrawn by sender.',
-      timestamp: new Date().toISOString()
-    };
-
-    await db.addBargainMessage(roomId, statusMsg);
-
-    setRooms((prevRooms) =>
-      prevRooms.map((r) => {
-        if (r.roomId === roomId) {
-          return {
-            ...r,
-            status: 'WITHDRAWN',
-            messages: [...r.messages, statusMsg]
-          };
-        }
-        return r;
-      })
-    );
-  };
 
   const handleUpdateOrderStatus = async (orderId: string, status: 'PROCESSING' | 'IN_TRANSIT' | 'ARRIVED') => {
     const updated = await db.updateOrderStatus(orderId, status);
