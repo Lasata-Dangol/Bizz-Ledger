@@ -50,6 +50,35 @@ export default function CartPage({
   const [qtyErrors, setQtyErrors] = useState<Record<string, string>>({});
   // Local display string for each cart item's input — allows free typing
   const [inputValues, setInputValues] = useState<Record<string, string>>({});
+  // Selected item IDs for partial checkout
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(
+    () => new Set()
+  );
+
+  // Sync selectedIds when cart changes (auto-select newly added items)
+  React.useEffect(() => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      cart.forEach(item => { if (!next.has(item.listing.id)) next.add(item.listing.id); });
+      // Remove ids that are no longer in cart
+      next.forEach(id => { if (!cart.find(i => i.listing.id === id)) next.delete(id); });
+      return next;
+    });
+  }, [cart]);
+
+  const toggleSelect = (id: string) => setSelectedIds(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
+
+  const allSelected = cart.length > 0 && cart.every(i => selectedIds.has(i.listing.id));
+  const toggleSelectAll = () => {
+    if (allSelected) setSelectedIds(new Set());
+    else setSelectedIds(new Set(cart.map(i => i.listing.id)));
+  };
+
+  const selectedCart = cart.filter(i => selectedIds.has(i.listing.id));
 
   // Commit typed value to cart on blur or Enter
   const commitQty = (listingId: string, maxAvailable: number) => {
@@ -99,11 +128,11 @@ export default function CartPage({
     return '90 km';
   };
 
-  // Calculations
-  const subtotal = cart.reduce((acc, item) => acc + (item.listing.pricePerCrate * item.quantity), 0);
+  // Calculations — only for selected items
+  const subtotal = selectedCart.reduce((acc, item) => acc + (item.listing.pricePerCrate * item.quantity), 0);
 
   // Logistics cost
-  const logisticsBaseCost = cart.reduce((acc, item) => {
+  const logisticsBaseCost = selectedCart.reduce((acc, item) => {
     const rate = getLogisticsRatePerCrate(item.listing.district);
     return acc + (rate * item.quantity);
   }, 0);
@@ -116,10 +145,10 @@ export default function CartPage({
   const grandTotal = subtotal + logisticsFinalCost + serviceLevy;
 
   const handleCheckoutSubmit = () => {
-    if (cart.length === 0) return;
+    if (selectedCart.length === 0) return;
 
-    // Build mock order receipts
-    const generated: Order[] = cart.map((item, idx) => {
+    // Build mock order receipts for selected items only
+    const generated: Order[] = selectedCart.map((item, idx) => {
       const baseDistanceRate = getLogisticsRatePerCrate(item.listing.district);
       const deliveryPrice = Math.round(baseDistanceRate * multiplier);
 
@@ -142,7 +171,10 @@ export default function CartPage({
 
     setCreatedOrders(generated);
     setIsCompleted(true);
-    onConfirmCheckout(cart, transportMethod, paymentMethod);
+    onConfirmCheckout(selectedCart, transportMethod, paymentMethod);
+    // Remove only selected items from cart
+    selectedIds.forEach(id => onRemoveCartItem(id));
+    setSelectedIds(new Set());
   };
 
   if (isCompleted) {
@@ -233,14 +265,27 @@ export default function CartPage({
               Adjust quantities or edit your items before confirming your order.
             </p>
           </div>
-          {cart.length > 0 && (
-            <button
-              onClick={onClearCart}
-              className="text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-3 py-1.5 rounded-xl transition font-bold cursor-pointer"
-            >
-              Empty Basket
-            </button>
-          )}
+          <div className="flex items-center gap-3">
+            {cart.length > 0 && (
+              <label className="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-neutral-600">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={toggleSelectAll}
+                  className="w-4 h-4 accent-emerald-600 cursor-pointer rounded"
+                />
+                Select All
+              </label>
+            )}
+            {cart.length > 0 && (
+              <button
+                onClick={onClearCart}
+                className="text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-3 py-1.5 rounded-xl transition font-bold cursor-pointer"
+              >
+                Empty Basket
+              </button>
+            )}
+          </div>
         </div>
 
         {cart.length === 0 ? (
@@ -266,10 +311,19 @@ export default function CartPage({
               return (
                 <div
                   key={item.listing.id}
-                  className="bg-white border border-neutral-100 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm"
+                  className={`bg-white border rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm transition-colors duration-150 ${
+                    selectedIds.has(item.listing.id) ? 'border-emerald-300' : 'border-neutral-100'
+                  }`}
                 >
+                  {/* Checkbox */}
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(item.listing.id)}
+                    onChange={() => toggleSelect(item.listing.id)}
+                    className="w-4 h-4 accent-emerald-600 cursor-pointer rounded shrink-0 mt-1 self-start sm:self-center"
+                  />
                   {/* Left segment details */}
-                  <div className="flex gap-3">
+                  <div className="flex gap-3 flex-1">
                     <img
                       src={item.listing.imageUrl}
                       alt={item.listing.cropName}
@@ -499,14 +553,14 @@ export default function CartPage({
 
           <button
             onClick={handleCheckoutSubmit}
-            disabled={cart.length === 0}
-            className={`w-full font-extrabold text-xs py-3.5 px-4 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer duration-150 shadow-md ${cart.length === 0
+            disabled={selectedCart.length === 0}
+            className={`w-full font-extrabold text-xs py-3.5 px-4 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer duration-150 shadow-md ${selectedCart.length === 0
                 ? 'bg-neutral-100 text-neutral-400 cursor-not-allowed shadow-none'
                 : 'bg-emerald-600 hover:bg-emerald-700 text-white'
               }`}
           >
             <CreditCard size={15} />
-            Confirm Order and Pay Now
+            Confirm {selectedCart.length > 0 ? `${selectedCart.length} Item${selectedCart.length > 1 ? 's' : ''}` : 'Order'} & Pay Now
           </button>
 
           <button
