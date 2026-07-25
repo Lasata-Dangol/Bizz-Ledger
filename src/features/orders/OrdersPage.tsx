@@ -13,12 +13,13 @@ interface OrdersPageProps {
 
 export default function OrdersPage({ orders, currentUser, onUpdateOrderStatus, onReceiveOrder, selectedOrderId: propSelectedOrderId, onSelectOrder }: OrdersPageProps) {
   const activeOrders = orders.filter(o => o.status !== 'ARRIVED');
-  const [localSelectedOrderId, setLocalSelectedOrderId] = useState<string | null>(activeOrders[0]?.orderId || null);
+  const [localSelectedOrderId, setLocalSelectedOrderId] = useState<string | null>(propSelectedOrderId || activeOrders[0]?.orderId || null);
 
-  const activeOrderId = propSelectedOrderId !== undefined ? propSelectedOrderId : localSelectedOrderId;
+  const activeOrderId = propSelectedOrderId !== undefined && propSelectedOrderId !== null ? propSelectedOrderId : localSelectedOrderId;
   const setSelectedOrderId = onSelectOrder || setLocalSelectedOrderId;
 
-  const activeOrder = activeOrders.find(o => o.orderId === activeOrderId) || activeOrders[0];
+  // Search full orders list so notification deeplinks work for all statuses
+  const activeOrder = orders.find(o => o.orderId === activeOrderId) || activeOrders[0];
 
   return (
     <div className="space-y-6">
