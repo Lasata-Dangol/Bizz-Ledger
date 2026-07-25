@@ -23,9 +23,9 @@ export default function KalimatiTicker({ rates }: KalimatiTickerProps) {
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-100"></span>
           </span>
-          Kalimati Live Kathmandu Rates
+          Kalimati Rates
         </div>
-        
+
         {/* Sliding Container */}
         <div className="relative w-full overflow-hidden">
           <div className="animate-marquee whitespace-nowrap flex gap-10 items-center">
@@ -37,8 +37,8 @@ export default function KalimatiTicker({ rates }: KalimatiTickerProps) {
               const changeBg = changeStatus === 'up' ? 'bg-emerald-50' : changeStatus === 'down' ? 'bg-rose-50' : 'bg-neutral-50';
 
               return (
-                <div 
-                  key={`${rate.cropName}-${index}`} 
+                <div
+                  key={`${rate.cropName}-${index}`}
                   className="inline-flex items-center gap-2 hover:scale-[1.02] transition-transform duration-200 cursor-pointer"
                 >
                   <span className="font-semibold text-neutral-800 text-sm">{rate.cropName}</span>
