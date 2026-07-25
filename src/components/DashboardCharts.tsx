@@ -11,7 +11,7 @@ export default function DashboardCharts({ orders, listings }: DashboardChartsPro
   // Compute Market Inflow (Total crates available from listings)
   const marketInflow = useMemo(() => {
     return listings.reduce((sum, list) => sum + list.quantityAvailableCrates, 0);
-  }, [listings]);
+  }, [listings]); //This is the dependency array of useMemo
 
   // Compute Bar Data over last 7 days
   const { barData, totalTradeValue, maxVal } = useMemo(() => {
@@ -19,8 +19,8 @@ export default function DashboardCharts({ orders, listings }: DashboardChartsPro
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
     let totalTrade = 0;
-    const dailyTotals: Record<number, number> = {};
-    const orderedDays: number[] = [];
+    const dailyTotals: Record<number, number> = {}; //here key-> number (index of day), value-> number (order by day) 
+    const orderedDays: number[] = []; //stores the order of days
 
     // Initialize last 7 days
     for (let i = 6; i >= 0; i--) {
@@ -50,7 +50,7 @@ export default function DashboardCharts({ orders, listings }: DashboardChartsPro
       if (dailyTotals[key] > mVal) mVal = dailyTotals[key];
     }
 
-    const computedBarData = orderedDays.map(dayOfWeek => {
+    const computedBarData = orderedDays.map(dayOfWeek => { //map() goes through every day and creates a new array.
       const val = dailyTotals[dayOfWeek] || 0;
       const heightPercent = mVal > 0 ? Math.max((val / mVal) * 100, 5) : 5; // Minimum 5% to show an empty bar
 
@@ -110,8 +110,8 @@ export default function DashboardCharts({ orders, listings }: DashboardChartsPro
                 <div
                   style={{ height: `${bar.value}%` }}
                   className={`w-full rounded-b-xl rounded-t-lg transition-all duration-300 ${bar.highlighted
-                      ? 'bg-gradient-to-t from-emerald-500 to-[#10b981] shadow-[0_4px_12px_rgba(16,185,129,0.3)]'
-                      : 'bg-gradient-to-t from-neutral-200 to-neutral-300 group-hover:from-neutral-300 group-hover:to-neutral-400'
+                    ? 'bg-gradient-to-t from-emerald-500 to-[#10b981] shadow-[0_4px_12px_rgba(16,185,129,0.3)]'
+                    : 'bg-gradient-to-t from-neutral-200 to-neutral-300 group-hover:from-neutral-300 group-hover:to-neutral-400'
                     }`}
                 />
               </div>
