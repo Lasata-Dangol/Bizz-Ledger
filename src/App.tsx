@@ -82,7 +82,6 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showNotificationCount, setShowNotificationCount] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
 
   // Load datasets dynamically from Supabase direct database adapter
   useEffect(() => {
