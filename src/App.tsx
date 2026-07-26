@@ -1109,7 +1109,7 @@ export default function App() {
 
           {/* Top Bar Header Area */}
           <header className="bg-white border border-neutral-100 rounded-3xl p-4 shadow-[0_4px_20px_rgba(0,0,0,0.015)] flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div className="relative flex-1 w-full max-w-md z-50">
+            <div className="relative flex-1 w-full max-w-md z-30">
               <Search 
                 className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-neutral-400 cursor-pointer hover:text-emerald-500 transition-colors" 
                 size={16} 
