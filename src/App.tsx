@@ -375,6 +375,7 @@ export default function App() {
           userId: ws.id,
           title: 'New Crop Available',
           message: `${currentUser.name} just listed ${newListing.quantityAvailableCrates} crates of ${newListing.cropName} from ${newListing.district} at Rs. ${newListing.pricePerCrate}/crate.`,
+          cropName: newListing.cropName,
           isRead: false,
           createdAt: new Date().toISOString(),
         });
@@ -1249,6 +1250,10 @@ export default function App() {
                                 setActiveTab('orders');
                                 // Clear after render so future manual visits don't re-select this order
                                 setTimeout(() => setSelectedOrderId(null), 500);
+                              } else if (n.cropName) {
+                                setSearchQuery(n.cropName);
+                                setSubmittedSearchQuery(n.cropName);
+                                setActiveTab('marketplace');
                               }
                               setShowNotifDropdown(false);
                             }}
@@ -1272,6 +1277,11 @@ export default function App() {
                               {n.orderId && (
                                 <span className="text-[8px] text-emerald-600 font-bold uppercase tracking-wider">
                                   View order →
+                                </span>
+                              )}
+                              {n.cropName && !n.orderId && (
+                                <span className="text-[8px] text-emerald-600 font-bold uppercase tracking-wider">
+                                  View crop →
                                 </span>
                               )}
                             </div>

@@ -84,6 +84,7 @@ export interface AppNotification {
   title: string;
   message: string;
   orderId?: string;
+  cropName?: string;
   isRead: boolean;
   createdAt: string;
 }
