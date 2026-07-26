@@ -168,11 +168,11 @@ export default function App() {
           }
         }
       });
-      return () => {
-        subscription.unsubscribe();
+      return () => { //cleanup mechanism
+        subscription.unsubscribe(); //unsubscribing from the auth state change event listener when the component unmounts
       };
     }
-  }, [isLoggedIn, currentUser?.id]);
+  }, [isLoggedIn, currentUser?.id]); //dependency array
 
   // Poll notifications every 3 seconds so farmers see purchase alerts in real time
   useEffect(() => {
@@ -493,13 +493,13 @@ export default function App() {
   const handleReceiveOrder = async (orderId: string) => {
     const order = orders.find(o => o.orderId === orderId);
     if (!order) return;
-    
+
     // Instead of deleting, update status to ARRIVED
     const updated = await db.updateOrderStatus(orderId, 'ARRIVED');
     if (updated) {
       setOrders(prev => prev.map(ord => ord.orderId === orderId ? updated : ord));
       setSelectedOrderId(null); // Reset selection
-      
+
       try {
         // 1. Increment totalDeals for wholesaler (currentUser)
         if (currentUser) {
@@ -532,7 +532,7 @@ export default function App() {
           await db.createNotification(farmerNotif);
         }
       } catch (e) {
-         console.error('Failed to notify farmer or increment deal stats on order receive', e);
+        console.error('Failed to notify farmer or increment deal stats on order receive', e);
       }
     }
   };
@@ -1111,9 +1111,9 @@ export default function App() {
           {/* Top Bar Header Area */}
           <header className="bg-white border border-neutral-100 rounded-3xl p-4 shadow-[0_4px_20px_rgba(0,0,0,0.015)] flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="relative flex-1 w-full max-w-md z-30">
-              <Search 
-                className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-neutral-400 cursor-pointer hover:text-emerald-500 transition-colors" 
-                size={16} 
+              <Search
+                className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-neutral-400 cursor-pointer hover:text-emerald-500 transition-colors"
+                size={16}
                 onClick={() => {
                   if (searchQuery.trim().length > 0) {
                     setSubmittedSearchQuery(searchQuery);
@@ -1134,18 +1134,18 @@ export default function App() {
                 }}
                 className="w-full pl-10 pr-4 py-2.5 bg-neutral-50/80 border border-neutral-150 rounded-2xl text-xs font-bold leading-none "
               />
-              
+
               {searchQuery.trim().length > 0 && (
                 (() => {
                   const normalizeMatch = (query: string, text: string) => {
                     if (!query.trim()) return true;
-                    const nq = query.toLowerCase().trim().replace(/es$/, '').replace(/s$/, '');
+                    const nq = query.toLowerCase().trim().replace(/es$/, '').replace(/s$/, ''); //removes plural endings
                     const nt = text.toLowerCase().trim().replace(/es$/, '').replace(/s$/, '');
                     return nt.includes(nq) || nq.includes(nt);
                   };
 
-                  const filteredSearchListings = listings.filter(l => 
-                    normalizeMatch(searchQuery, l.cropName) || 
+                  const filteredSearchListings = listings.filter(l =>
+                    normalizeMatch(searchQuery, l.cropName) ||
                     normalizeMatch(searchQuery, l.category) ||
                     normalizeMatch(searchQuery, l.district) ||
                     normalizeMatch(searchQuery, l.farmerName)
@@ -1155,8 +1155,8 @@ export default function App() {
                     <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-neutral-150 rounded-2xl shadow-lg z-50 max-h-80 overflow-y-auto">
                       {filteredSearchListings.length > 0 ? (
                         filteredSearchListings.map(listing => (
-                          <div 
-                            key={listing.id} 
+                          <div
+                            key={listing.id}
                             className="p-3 hover:bg-neutral-50 border-b border-neutral-100 last:border-0 cursor-pointer flex items-center justify-between transition-colors duration-150"
                             onClick={() => {
                               setSearchQuery(listing.cropName);
@@ -1201,7 +1201,7 @@ export default function App() {
                     <span className="w-2 h-2 bg-red-500 rounded-full absolute top-2 right-2 ring-2 ring-white animate-pulse" />
                   )}
                 </button>
-                  {/* Notifications Dropdown Panel */}
+                {/* Notifications Dropdown Panel */}
                 {showNotifDropdown && (
                   <div className="absolute right-0 mt-2 w-80 bg-white border border-neutral-150 rounded-2xl shadow-xl z-50 p-4 space-y-3 max-h-96 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-150">
                     <div className="flex justify-between items-center border-b border-neutral-100 pb-2">
@@ -1257,11 +1257,10 @@ export default function App() {
                               }
                               setShowNotifDropdown(false);
                             }}
-                            className={`p-2.5 rounded-xl text-xs text-left cursor-pointer transition-all duration-150 border-l-2 ${
-                              n.isRead
+                            className={`p-2.5 rounded-xl text-xs text-left cursor-pointer transition-all duration-150 border-l-2 ${n.isRead
                                 ? 'opacity-55 border-transparent bg-transparent hover:bg-neutral-50 hover:opacity-80'
                                 : 'border-emerald-500 bg-emerald-50/70 hover:bg-emerald-50 shadow-sm'
-                            }`}
+                              }`}
                           >
                             <div className="flex justify-between items-start gap-2">
                               <span className={`text-[11px] font-bold leading-tight block ${n.isRead ? 'text-neutral-600' : 'text-neutral-900'}`}>

@@ -6,7 +6,7 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
-/* Custom scrollbar and marquee styles */
+/*pseudo-element Custom scrollbar and marquee styles */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -64,6 +64,7 @@
   -webkit-appearance: none;
   margin: 0;
 }
+
 .hide-arrows[type=number] {
   -moz-appearance: textfield;
 }
