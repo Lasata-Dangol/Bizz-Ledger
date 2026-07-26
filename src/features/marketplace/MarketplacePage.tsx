@@ -36,8 +36,8 @@ export default function MarketplacePage({ listings, onAddToCart, currentUser, on
 
   // Filter listings
   const filteredListings = listings.filter((item) => {
-    const matchesSearch = normalizeMatch(searchTerm, item.cropName) || 
-                          normalizeMatch(searchTerm, item.farmerName);
+    const matchesSearch = normalizeMatch(searchTerm, item.cropName) ||
+      normalizeMatch(searchTerm, item.farmerName);
     const matchesDistrict = selectedDistrict === 'All' || item.district === selectedDistrict;
     const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
     return matchesSearch && matchesDistrict && matchesCategory;
@@ -71,13 +71,13 @@ export default function MarketplacePage({ listings, onAddToCart, currentUser, on
       <div className="bg-white border border-neutral-100 rounded-3xl p-5 shadow-[0_4px_20px_rgba(0,0,0,0.02)] space-y-4">
         <div className="flex flex-col md:flex-row gap-4">
           {/* Main search input */}
-          <div className="relative flex-1 z-50">
-            <Search 
-              className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-neutral-400 group-focus-within:text-emerald-500 transition duration-200 cursor-pointer" 
-              size={18} 
+          <div className="relative flex-1 z-30">
+            <Search
+              className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-neutral-400 group-focus-within:text-emerald-500 transition duration-200 cursor-pointer"
+              size={18}
               onClick={() => setSearchTerm(searchInput)}
             />
-            <input 
+            <input
               type="text"
               placeholder="Search vegetables or farmers (e.g. Tomato, Pema Shrestha)..."
               value={searchInput}
@@ -89,19 +89,19 @@ export default function MarketplacePage({ listings, onAddToCart, currentUser, on
               }}
               className="w-full pl-11 pr-4 py-3 bg-neutral-50/80 border border-neutral-200 rounded-2xl text-sm font-medium focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition duration-200"
             />
-            
+
             {searchInput.trim().length > 0 && searchInput !== searchTerm && (
               <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-neutral-150 rounded-2xl shadow-lg z-50 max-h-80 overflow-y-auto">
                 {(() => {
-                  const filteredSearchListings = listings.filter(l => 
-                    normalizeMatch(searchInput, l.cropName) || 
+                  const filteredSearchListings = listings.filter(l =>
+                    normalizeMatch(searchInput, l.cropName) ||
                     normalizeMatch(searchInput, l.farmerName) ||
                     normalizeMatch(searchInput, l.district)
                   );
                   return filteredSearchListings.length > 0 ? (
                     filteredSearchListings.map(listing => (
-                      <div 
-                        key={listing.id} 
+                      <div
+                        key={listing.id}
                         className="p-3 hover:bg-neutral-50 border-b border-neutral-100 last:border-0 cursor-pointer flex items-center justify-between transition-colors duration-150"
                         onClick={() => {
                           setSearchInput(listing.cropName);
@@ -113,8 +113,8 @@ export default function MarketplacePage({ listings, onAddToCart, currentUser, on
                           <span className="text-xs text-neutral-500">{listing.farmerName} • {listing.district}</span>
                         </div>
                         <div className="flex flex-col items-end">
-                          <span className="font-bold text-emerald-600">Rs. {listing.pricePerCrate / 20}/kg</span>
-                          <span className="text-xs text-neutral-500">{listing.quantityAvailableCrates * 20} kg</span>
+                          <span className="font-bold text-emerald-600">Rs. {listing.pricePerKg}/kg</span>
+                          <span className="text-xs text-neutral-500">{listing.volumeKg} kg</span>
                         </div>
                       </div>
                     ))
@@ -135,11 +135,10 @@ export default function MarketplacePage({ listings, onAddToCart, currentUser, on
               <button
                 key={dist}
                 onClick={() => setSelectedDistrict(dist)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer transition ${
-                  selectedDistrict === dist 
-                    ? 'bg-neutral-900 text-white shadow-xs' 
-                    : 'bg-neutral-50 text-neutral-600 hover:bg-neutral-100'
-                }`}
+                className={`px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer transition ${selectedDistrict === dist
+                  ? 'bg-neutral-900 text-white shadow-xs'
+                  : 'bg-neutral-50 text-neutral-600 hover:bg-neutral-100'
+                  }`}
               >
                 {dist === 'All' ? 'All Districts' : dist.split(',')[0]}
               </button>
@@ -154,11 +153,10 @@ export default function MarketplacePage({ listings, onAddToCart, currentUser, on
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-medium cursor-pointer transition ${
-                selectedCategory === cat 
-                  ? 'bg-emerald-600 text-white shadow-xs' 
-                  : 'bg-neutral-50 text-neutral-500 hover:bg-neutral-100'
-              }`}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-medium cursor-pointer transition ${selectedCategory === cat
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'bg-neutral-50 text-neutral-500 hover:bg-neutral-100'
+                }`}
             >
               {cat}
             </button>
@@ -182,15 +180,15 @@ export default function MarketplacePage({ listings, onAddToCart, currentUser, on
             const readyShipment = item.readyToShip;
 
             return (
-              <div 
-                key={item.id} 
+              <div
+                key={item.id}
                 className="bg-white border border-neutral-100 rounded-3xl overflow-hidden shadow-[0_4px_25px_rgba(0,0,0,0.02)] hover:shadow-md transition-all duration-300 flex flex-col justify-between"
               >
                 {/* Visual Header */}
                 <div className="relative h-48 bg-neutral-100">
-                  <img 
-                    src={item.imageUrl} 
-                    alt={item.cropName} 
+                  <img
+                    src={item.imageUrl}
+                    alt={item.cropName}
                     className="w-full h-full object-cover"
                     referrerPolicy="no-referrer"
                   />
@@ -198,13 +196,12 @@ export default function MarketplacePage({ listings, onAddToCart, currentUser, on
                   <span className="absolute top-4 left-4 bg-white/80 backdrop-blur-md text-neutral-800 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
                     {item.category}
                   </span>
-                  
+
                   {/* Shipping readiness indicator */}
-                  <span className={`absolute top-4 right-4 text-[10px] font-extrabold px-3 py-1 rounded-full shadow-sm flex items-center gap-1 ${
-                    readyShipment 
-                      ? 'bg-emerald-500 text-white' 
-                      : 'bg-amber-400 text-amber-950'
-                  }`}>
+                  <span className={`absolute top-4 right-4 text-[10px] font-extrabold px-3 py-1 rounded-full shadow-sm flex items-center gap-1 ${readyShipment
+                    ? 'bg-emerald-500 text-white'
+                    : 'bg-amber-400 text-amber-950'
+                    }`}>
                     <Truck size={11} />
                     {readyShipment ? 'Ready for Sourcing' : 'Harvest Scheduled'}
                   </span>
@@ -227,7 +224,7 @@ export default function MarketplacePage({ listings, onAddToCart, currentUser, on
                         {item.farmerName[0]}
                       </div>
                       <div>
-                        <span 
+                        <span
                           onClick={() => onViewFarmer && onViewFarmer(item.farmerId)}
                           className="block text-xs font-bold text-neutral-700 leading-tight cursor-pointer hover:text-emerald-700 hover:underline"
                         >
@@ -273,14 +270,13 @@ export default function MarketplacePage({ listings, onAddToCart, currentUser, on
                 {/* Footer buttons based on current roles etc */}
                 <div className="p-6 pt-0 space-y-2">
                   {currentUser.role === 'WHOLESALER' ? (
-                    <button 
+                    <button
                       onClick={() => onAddToCart && onAddToCart(item)}
                       disabled={item.quantityAvailableCrates === 0}
-                      className={`w-full flex items-center justify-center gap-1.5 font-bold py-2.5 px-3 rounded-xl text-xs transition duration-150 ${
-                        item.quantityAvailableCrates === 0
-                          ? 'bg-neutral-200 text-neutral-500 cursor-not-allowed'
-                          : 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer hover:shadow-xs'
-                      }`}
+                      className={`w-full flex items-center justify-center gap-1.5 font-bold py-2.5 px-3 rounded-xl text-xs transition duration-150 ${item.quantityAvailableCrates === 0
+                        ? 'bg-neutral-200 text-neutral-500 cursor-not-allowed'
+                        : 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer hover:shadow-xs'
+                        }`}
                     >
                       <ShoppingCart size={13} />
                       {item.quantityAvailableCrates === 0 ? 'Sold out' : 'Add to Basket'}
