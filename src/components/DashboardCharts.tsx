@@ -76,11 +76,9 @@ export default function DashboardCharts({ orders, listings }: DashboardChartsPro
             </span>
             <h3 className="text-xl font-bold text-neutral-800">Product Price Velocity</h3>
           </div>
-          <select className="bg-neutral-50 border border-neutral-150 text-xs font-semibold text-neutral-600 rounded-xl px-3.5 py-2 hover:bg-neutral-100 transition duration-150 focus:outline-hidden">
-            <option>Last 7 days</option>
-            <option>Last month</option>
-            <option>Current season</option>
-          </select>
+          <span className="bg-neutral-50 border border-neutral-150 text-xs font-semibold text-neutral-500 rounded-xl px-3.5 py-2">
+            Last 7 days
+          </span>
         </div>
 
         {/* Total aggregate label */}
