@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Order, UserProfile } from '../../types';
 import { Truck, PhoneCall } from 'lucide-react';
 
@@ -14,6 +14,12 @@ interface OrdersPageProps {
 export default function OrdersPage({ orders, currentUser, onUpdateOrderStatus, onReceiveOrder, selectedOrderId: propSelectedOrderId, onSelectOrder }: OrdersPageProps) {
   const activeOrders = orders.filter(o => o.status !== 'ARRIVED');
   const [localSelectedOrderId, setLocalSelectedOrderId] = useState<string | null>(propSelectedOrderId || activeOrders[0]?.orderId || null);
+
+  useEffect(() => {
+    if (propSelectedOrderId) {
+      setLocalSelectedOrderId(propSelectedOrderId);
+    }
+  }, [propSelectedOrderId]);
 
   const activeOrderId = propSelectedOrderId !== undefined && propSelectedOrderId !== null ? propSelectedOrderId : localSelectedOrderId;
   const setSelectedOrderId = onSelectOrder || setLocalSelectedOrderId;

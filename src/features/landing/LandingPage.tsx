@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
 import { UserProfile, KalimatiRate } from '../../types';
 import { supabase, isSupabaseConfigured, db } from '../../lib/supabase';
-import { 
-  Leaf, 
-  Sparkles, 
-  Building2, 
-  TrendingUp, 
-  Users2, 
-  CheckCircle2, 
-  ArrowRight, 
-  Truck, 
+import {
+  Leaf,
+  Sparkles,
+  Building2,
+  TrendingUp,
+  Users2,
+  CheckCircle2,
+  ArrowRight,
+  Truck,
   ShieldCheck
 } from 'lucide-react';
 
@@ -30,8 +30,8 @@ export default function LandingPage({ onLogin, kalimatiRates }: LandingPageProps
   const [showSimulatedGooglePopup, setShowSimulatedGooglePopup] = useState(false);
 
   const handleGoogleLoginClick = async () => {
-    setLoginError(null);
-    if (!phone.replace(/[^0-9]/g, '').trim()) {
+    setLoginError(null); //resets previous login errors to null
+    if (!phone.replace(/[^0-9]/g, '').trim()) { //trim()- Removes any remaining whitespace from the start/end of the resulting string.
       setLoginError('Please enter a valid phone number before logging in.');
       return;
     }
@@ -122,8 +122,8 @@ export default function LandingPage({ onLogin, kalimatiRates }: LandingPageProps
           </div>
 
           <div className="flex items-center gap-3">
-            <a 
-              href="#portal" 
+            <a
+              href="#portal"
               className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2.5 px-4 rounded-xl shadow-xs transition duration-250 select-none"
             >
               Sign In with Google
@@ -149,15 +149,15 @@ export default function LandingPage({ onLogin, kalimatiRates }: LandingPageProps
           </p>
 
           <div className="flex flex-col sm:flex-row justify-center items-center gap-4 pt-4">
-            <a 
-              href="#portal" 
+            <a
+              href="#portal"
               className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-750 text-white font-extrabold text-xs py-4 px-8 rounded-2xl shadow-lg shadow-emerald-600/10 flex items-center justify-center gap-2 transition duration-200"
             >
               Join the Direct Desk
               <ArrowRight size={14} />
             </a>
-            <a 
-              href="#ticker" 
+            <a
+              href="#ticker"
               className="w-full sm:w-auto bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-bold text-xs py-4 px-8 rounded-2xl transition duration-200"
             >
               Today's Kalimati Prices
@@ -276,22 +276,21 @@ export default function LandingPage({ onLogin, kalimatiRates }: LandingPageProps
             {kalimatiRates
               .filter(rate => rate.cropName.toLowerCase().includes(rateSearchQuery.toLowerCase()))
               .map((rate, idx) => {
-              const changeStatus = rate.change || 'stable';
-              const isUp = changeStatus === 'up';
-              const isStable = changeStatus === 'stable';
-              return (
-                <div key={idx} className="min-w-[180px] sm:min-w-[200px] shrink-0 bg-white/80 backdrop-blur-md border border-emerald-100 rounded-2xl p-4 shadow-xs text-left snap-start group hover:-translate-y-1 transition duration-200">
-                  <span className="font-bold text-neutral-700">{rate.cropName}</span>
-                  <div className="text-right">
-                    <span className="font-extrabold text-neutral-900 block">Rs. {rate.avgPrice} / {rate.unit}</span>
-                    <span className={`flex items-center gap-0.5 text-[10px] md:text-xs font-bold px-1.5 py-0.5 rounded-md ${
-                        isUp ? 'text-emerald-700 bg-emerald-50' : 
-                        isStable ? 'text-neutral-500 bg-neutral-100' : 'text-rose-600 bg-rose-50'
-                      }`}>Today ({changeStatus})</span>
+                const changeStatus = rate.change || 'stable';
+                const isUp = changeStatus === 'up';
+                const isStable = changeStatus === 'stable';
+                return (
+                  <div key={idx} className="min-w-[180px] sm:min-w-[200px] shrink-0 bg-white/80 backdrop-blur-md border border-emerald-100 rounded-2xl p-4 shadow-xs text-left snap-start group hover:-translate-y-1 transition duration-200">
+                    <span className="font-bold text-neutral-700">{rate.cropName}</span>
+                    <div className="text-right">
+                      <span className="font-extrabold text-neutral-900 block">Rs. {rate.avgPrice} / {rate.unit}</span>
+                      <span className={`flex items-center gap-0.5 text-[10px] md:text-xs font-bold px-1.5 py-0.5 rounded-md ${isUp ? 'text-emerald-700 bg-emerald-50' :
+                          isStable ? 'text-neutral-500 bg-neutral-100' : 'text-rose-600 bg-rose-50'
+                        }`}>Today ({changeStatus})</span>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
           </div>
         </div>
       </section>
@@ -308,7 +307,7 @@ export default function LandingPage({ onLogin, kalimatiRates }: LandingPageProps
           </div>
 
           <div className="bg-zinc-800/80 border border-zinc-700/85 p-6 sm:p-8 rounded-3xl shadow-xl space-y-6">
-            
+
             {loginError && (
               <div className="bg-red-500/10 border border-red-500/25 p-3 rounded-xl text-red-300 text-xs font-semibold">
                 ⚠ {loginError}
@@ -322,11 +321,10 @@ export default function LandingPage({ onLogin, kalimatiRates }: LandingPageProps
                 <button
                   type="button"
                   onClick={() => setSelectedRole('FARMER')}
-                  className={`p-4 border rounded-2xl text-xs font-bold transition text-center flex flex-col items-center justify-center gap-2 cursor-pointer duration-150 ${
-                    selectedRole === 'FARMER'
+                  className={`p-4 border rounded-2xl text-xs font-bold transition text-center flex flex-col items-center justify-center gap-2 cursor-pointer duration-150 ${selectedRole === 'FARMER'
                       ? 'border-emerald-500 bg-emerald-500/10 text-emerald-300'
                       : 'border-zinc-700 bg-zinc-90 w-full text-zinc-400 hover:text-white'
-                  }`}
+                    }`}
                 >
                   <Building2 size={16} />
                   <div>
@@ -338,11 +336,10 @@ export default function LandingPage({ onLogin, kalimatiRates }: LandingPageProps
                 <button
                   type="button"
                   onClick={() => setSelectedRole('WHOLESALER')}
-                  className={`p-4 border rounded-2xl text-xs font-bold transition text-center flex flex-col items-center justify-center gap-2 cursor-pointer duration-150 ${
-                    selectedRole === 'WHOLESALER'
+                  className={`p-4 border rounded-2xl text-xs font-bold transition text-center flex flex-col items-center justify-center gap-2 cursor-pointer duration-150 ${selectedRole === 'WHOLESALER'
                       ? 'border-sky-500 bg-sky-500/10 text-sky-300'
                       : 'border-zinc-700 bg-zinc-90 w-full text-zinc-400 hover:text-white'
-                  }`}
+                    }`}
                 >
                   <TrendingUp size={16} />
                   <div>
@@ -419,38 +416,35 @@ export default function LandingPage({ onLogin, kalimatiRates }: LandingPageProps
               <p className="text-[11px] text-neutral-400">Select which active identity credential from your browser session to authorize direct trade desk access:</p>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-4">
+              <div>
+                <label className="text-[11px] font-bold uppercase text-neutral-500 tracking-wider block mb-1">Your Full Name</label>
+                <input
+                  type="text"
+                  id="simulated-name-input"
+                  placeholder="Enter your name"
+                  className="w-full text-xs p-3 bg-neutral-50 border border-neutral-200 text-neutral-900 rounded-xl focus:outline-hidden focus:border-emerald-500 transition"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                      const name = e.currentTarget.value.trim();
+                      handleSelectSimulatedAccount(`${name.toLowerCase().replace(/\s+/g, '.')}@gmail.com`, name, 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80');
+                    }
+                  }}
+                />
+              </div>
               <button
-                onClick={() => handleSelectSimulatedAccount('pema.shrestha@gmail.com', 'Pema Shrestha', 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80')}
-                className="w-full text-left p-2.5 hover:bg-neutral-50 rounded-xl border border-neutral-100 flex items-center gap-3 transition cursor-pointer"
+                onClick={() => {
+                  const input = document.getElementById('simulated-name-input') as HTMLInputElement;
+                  if (input && input.value.trim()) {
+                    const name = input.value.trim();
+                    handleSelectSimulatedAccount(`${name.toLowerCase().replace(/\s+/g, '.')}@gmail.com`, name, 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80');
+                  } else {
+                    alert("Please enter a name to continue");
+                  }
+                }}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-3 rounded-xl transition duration-200 shadow-md cursor-pointer"
               >
-                <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80" alt="Pema" className="w-9 h-9 rounded-xl object-cover" referrerPolicy="no-referrer" />
-                <div>
-                  <span className="text-xs font-bold text-neutral-800 block">Pema Shrestha</span>
-                  <span className="text-[10px] text-neutral-400 block">pema.shrestha@gmail.com</span>
-                </div>
-              </button>
-
-              <button
-                onClick={() => handleSelectSimulatedAccount('manoj.dahal@gmail.com', 'Manoj Dahal', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80')}
-                className="w-full text-left p-2.5 hover:bg-neutral-50 rounded-xl border border-neutral-100 flex items-center gap-3 transition cursor-pointer"
-              >
-                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80" alt="Manoj" className="w-9 h-9 rounded-xl object-cover" referrerPolicy="no-referrer" />
-                <div>
-                  <span className="text-xs font-bold text-neutral-800 block">Manoj Dahal</span>
-                  <span className="text-[10px] text-neutral-400 block">manoj.dahal@gmail.com</span>
-                </div>
-              </button>
-
-              <button
-                onClick={() => handleSelectSimulatedAccount('ramesh.traders@gmail.com', 'Ramesh Traders', 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150&auto=format&fit=crop&q=80')}
-                className="w-full text-left p-2.5 hover:bg-neutral-50 rounded-xl border border-neutral-100 flex items-center gap-3 transition cursor-pointer"
-              >
-                <img src="https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150&auto=format&fit=crop&q=80" alt="Ramesh" className="w-9 h-9 rounded-xl object-cover" referrerPolicy="no-referrer" />
-                <div>
-                  <span className="text-xs font-bold text-neutral-800 block">Ramesh Traders</span>
-                  <span className="text-[10px] text-neutral-400 block">ramesh.traders@gmail.com</span>
-                </div>
+                Continue as Guest
               </button>
             </div>
 
