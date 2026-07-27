@@ -868,7 +868,7 @@ export default function App() {
                       My Shopping Cart
                     </span>
                     {cart.length > 0 && (
-                      <span className="h-4.5 px-1.5 rounded-full bg-orange-500 text-white font-black text-[9px] flex items-center justify-center">
+                      <span className="h-4.5 px-1.5 rounded-full bg-green-500 text-white font-black text-[9px] flex items-center justify-center">
                         {cart.reduce((s, c) => s + c.quantity, 0)} Cr
                       </span>
                     )}
@@ -1029,7 +1029,7 @@ export default function App() {
                     My Shopping Cart
                   </span>
                   {cart.length > 0 && (
-                    <span className="h-4.5 px-1.5 rounded-full bg-orange-500 text-white font-black text-[9px] flex items-center justify-center">
+                    <span className="h-4.5 px-1.5 rounded-full bg-green-500 text-white font-black text-[9px] flex items-center justify-center">
                       {cart.reduce((s, c) => s + c.quantity, 0)} Cr
                     </span>
                   )}
@@ -1258,8 +1258,8 @@ export default function App() {
                               setShowNotifDropdown(false);
                             }}
                             className={`p-2.5 rounded-xl text-xs text-left cursor-pointer transition-all duration-150 border-l-2 ${n.isRead
-                                ? 'opacity-55 border-transparent bg-transparent hover:bg-neutral-50 hover:opacity-80'
-                                : 'border-emerald-500 bg-emerald-50/70 hover:bg-emerald-50 shadow-sm'
+                              ? 'opacity-55 border-transparent bg-transparent hover:bg-neutral-50 hover:opacity-80'
+                              : 'border-emerald-500 bg-emerald-50/70 hover:bg-emerald-50 shadow-sm'
                               }`}
                           >
                             <div className="flex justify-between items-start gap-2">
