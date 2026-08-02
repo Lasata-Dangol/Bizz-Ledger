@@ -59,7 +59,6 @@ CREATE TABLE IF NOT EXISTS profiles (
     district TEXT,
     phone TEXT,
     "companyName" TEXT,
-    rating NUMERIC DEFAULT 5.0,
     "totalDeals" INTEGER DEFAULT 0,
     "isOnboarded" BOOLEAN DEFAULT false,
     "farmName" TEXT,
