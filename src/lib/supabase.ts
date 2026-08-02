@@ -5,7 +5,7 @@ import { MOCK_USERS, KALIMATI_RATES, INITIAL_LISTINGS, INITIAL_ORDERS } from '..
 const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
 
-// Lazy initialization of the Supabase client to prevent startup crash if keys are missing
+//initialization of the Supabase client to prevent startup crash if keys are missing
 export const supabase = supabaseUrl && supabaseAnonKey
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null;
@@ -21,7 +21,7 @@ export const isSupabaseConfigured = () => {
  * so that the App NEVER crashes, is fully functional, and stores all changes dynamically!
  */
 class DirectLedgerDb {
-  private localKey(key: string) {
+  private localKey(key: string) { //helper function:only this class can use it
     if (key === 'listings') return `bizzledger_db_listings_v2`;
     return `bizzledger_db_${key}`;
   }
@@ -412,4 +412,4 @@ class DirectLedgerDb {
   }
 }
 
-export const db = new DirectLedgerDb();
+export const db = new DirectLedgerDb(); //new- creates object of the class 

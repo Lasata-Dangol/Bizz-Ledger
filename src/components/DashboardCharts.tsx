@@ -24,7 +24,7 @@ export default function DashboardCharts({ orders, listings }: DashboardChartsPro
 
     // Initialize last 7 days
     for (let i = 6; i >= 0; i--) {
-      const d = new Date(today);
+      const d = new Date(today); //creates copy of todays date
       d.setDate(today.getDate() - i);
       dailyTotals[d.getDay()] = 0;
       orderedDays.push(d.getDay());
